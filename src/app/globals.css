@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/*
+ * Font: Cormorant Garamond (tiêu đề) + Be Vietnam Pro (nội dung) — thay cho Avenir Next của bản Figma.
+ * Màu & khoảng cách giữ theo design gốc (UI MỚI 10/2026).
+ */
+@theme {
+  --font-display: "Cormorant Garamond", "Times New Roman", serif;
+  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+
+  --color-ink: #141414;
+  --color-ink-2: #1f1f1f;
+  --color-ink-3: #2e2e2e;
+  --color-ink-4: #474747;
+  --color-muted: #666666;
+  --color-subtle: #999999;
+  --color-line: #e0e0e0;
+  --color-paper: #f9f9f9;
+  --color-paper-2: #f5f5f5;
+  --color-stone: #f2f2ef;
+  --color-sand: #eeece7;
+  --color-gold: #e7d4b2;
+  --color-danger: #fb2c36;
+
+  --container-site: 1280px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background: #ffffff;
+    color: var(--color-ink-2);
+    font-family: var(--font-sans);
+  }
+  ::selection {
+    background: var(--color-ink);
+    color: #fff;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+}
+
+@layer components {
+  /* Nhãn nhỏ viết hoa — dùng rất nhiều trong design */
+  .eyebrow {
+    @apply text-[10px] leading-[15px] tracking-[0.12em] uppercase;
+  }
+  .label-caps {
+    @apply text-[12px] leading-[18px] tracking-[0.1em] uppercase;
+  }
+  .field {
+    @apply h-10 w-full border border-black/15 bg-paper-2 px-3 text-[13px] text-black outline-none transition-colors placeholder:text-black/35 focus:border-black;
+  }
+  .btn-dark {
+    @apply inline-flex min-h-11 items-center justify-center border border-black bg-black px-8 py-3 text-[12px] font-medium tracking-[0.12em] text-white uppercase transition-colors hover:bg-ink-3;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center border border-ink px-8 py-3 text-[12px] tracking-[0.15em] text-ink uppercase transition-colors hover:bg-ink hover:text-white;
+  }
+  .link-underline {
+    @apply relative after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform hover:after:scale-x-100;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}

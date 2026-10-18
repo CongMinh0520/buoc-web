@@ -1,0 +1,441 @@
+/*
+ * Giao diện admin theo nhận diện BƯỚC: nền ngà, chữ mực đen, điểm nhấn vàng, font của website.
+ * Không bọc trong @layer → ghi đè được lớp `payload-default` của Payload.
+ */
+
+:root {
+  --buoc-ivory: #fcfbf8;
+  --buoc-stone: #f2f2ef;
+  --buoc-sand: #eeece7;
+  --buoc-gold: #e7d4b2;
+  --buoc-gold-deep: #b8955a;
+  --buoc-ink: #141414;
+
+  /* Thang xám ấm thay cho xám trung tính mặc định */
+  --color-base-0: #fcfbf8;
+  --color-base-50: #f6f4ef;
+  --color-base-100: #eeece7;
+  --color-base-150: #e4e1da;
+  --color-base-200: #d6d2c9;
+  --color-base-250: #c8c3b9;
+  --color-base-300: #b8b3a8;
+  --color-base-350: #a8a297;
+  --color-base-400: #979186;
+  --color-base-450: #878176;
+  --color-base-500: #77716a;
+  --color-base-550: #67625b;
+  --color-base-600: #58534d;
+  --color-base-650: #4a4641;
+  --color-base-700: #3d3a36;
+  --color-base-750: #312f2c;
+  --color-base-800: #262422;
+  --color-base-850: #1d1c1a;
+  --color-base-900: #141414;
+  --color-base-950: #0b0b0a;
+  --color-base-1000: #000000;
+
+  --font-body: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", "Times New Roman", serif;
+  --style-radius-s: 2px;
+  --style-radius-m: 4px;
+  --style-radius-l: 6px;
+}
+
+html[data-theme="light"] {
+  --theme-bg: var(--buoc-ivory);
+  --theme-input-bg: #fff;
+}
+
+body {
+  font-family: var(--font-body);
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tiêu đề dùng font hiển thị của website */
+h1,
+.doc-header__title,
+.collection-list__header h1,
+.collections__label,
+.dashboard__label {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.dashboard__label {
+  font-size: 1.6rem;
+}
+
+::selection {
+  background: var(--buoc-gold);
+  color: var(--buoc-ink);
+}
+
+/* ——— Thanh điều hướng ——— */
+.nav {
+  background: var(--buoc-stone);
+  border-right: 1px solid var(--color-base-150);
+}
+.nav-group__toggle {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-base-500);
+}
+.nav__link {
+  border-radius: var(--style-radius-s);
+}
+.nav__link:hover,
+.nav__link.active,
+.nav__link--active {
+  background: var(--buoc-sand);
+}
+.nav__link .nav__link-indicator,
+.nav__link-indicator {
+  background: var(--buoc-gold-deep);
+}
+
+/* ——— Nút & ô nhập ——— */
+.btn--style-primary {
+  background: var(--buoc-ink);
+  color: var(--buoc-ivory);
+  letter-spacing: 0.02em;
+}
+.btn--style-primary:hover:not(:disabled) {
+  background: #2c2a27;
+}
+.btn--style-secondary {
+  box-shadow: inset 0 0 0 1px var(--buoc-ink);
+}
+input:focus,
+textarea:focus,
+.react-select .rs__control--is-focused {
+  box-shadow: 0 0 0 1px var(--buoc-gold-deep) !important;
+}
+
+/* ——— Thẻ trên dashboard mặc định & bảng ——— */
+.card {
+  background: #fff;
+  border: 1px solid var(--color-base-150);
+  box-shadow: none;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.card:hover {
+  border-color: var(--buoc-gold-deep);
+  transform: translateY(-1px);
+}
+.table table {
+  background: #fff;
+}
+
+/* ——— Màn hình đăng nhập ——— */
+.template-minimal {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(231, 212, 178, 0.45), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(231, 212, 178, 0.3), transparent 40%),
+    var(--buoc-ivory);
+}
+.template-minimal__wrap {
+  background: #fff;
+  border: 1px solid var(--color-base-150);
+  padding: calc(var(--base) * 2);
+  box-shadow: 0 24px 60px -30px rgba(20, 20, 20, 0.25);
+}
+.login__brand {
+  margin-bottom: calc(var(--base) * 1.2);
+}
+
+/* ——— Logo & icon ——— */
+.buoc-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--buoc-ink);
+}
+.buoc-logo__mark {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 1;
+}
+.buoc-logo__sub {
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--color-base-500);
+}
+.buoc-logo__rule {
+  width: 32px;
+  height: 1px;
+  background: var(--buoc-gold-deep);
+}
+.buoc-login-intro {
+  text-align: center;
+  color: var(--color-base-500);
+  margin: 0 0 calc(var(--base) * 1.2);
+  font-size: 13px;
+}
+
+/* ——— Dashboard tổng quan ——— */
+.buoc-dash {
+  margin-bottom: calc(var(--base) * 2);
+}
+.buoc-dash__hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--base);
+  padding: calc(var(--base) * 1.6);
+  background:
+    radial-gradient(circle at 90% 0%, rgba(231, 212, 178, 0.55), transparent 55%),
+    var(--buoc-stone);
+  border: 1px solid var(--color-base-150);
+  margin-bottom: var(--base);
+}
+.buoc-dash__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--buoc-gold-deep);
+  margin: 0 0 6px;
+}
+.buoc-dash__title {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 34px;
+  line-height: 1.1;
+  margin: 0;
+}
+.buoc-dash__date {
+  color: var(--color-base-500);
+  margin: 6px 0 0;
+}
+.buoc-dash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.buoc-dash__action {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--buoc-ink);
+  color: var(--buoc-ink);
+  text-decoration: none;
+  font-size: 13px;
+  background: #fff;
+  transition: background 0.15s, color 0.15s;
+}
+.buoc-dash__action:hover {
+  background: var(--buoc-ink);
+  color: var(--buoc-ivory);
+}
+.buoc-dash__action--primary {
+  background: var(--buoc-ink);
+  color: var(--buoc-ivory);
+}
+
+.buoc-dash__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--base);
+  margin-bottom: var(--base);
+}
+.buoc-dash__stat {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--color-base-150);
+  padding: var(--base);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+a.buoc-dash__stat:hover {
+  border-color: var(--buoc-gold-deep);
+}
+.buoc-dash__stat-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-base-500);
+}
+.buoc-dash__stat-value {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.15;
+  margin: 6px 0 2px;
+  color: var(--buoc-ink);
+}
+.buoc-dash__stat-note {
+  font-size: 12px;
+  color: var(--color-base-500);
+}
+.buoc-dash__stat-note--warn {
+  color: var(--color-error-600);
+}
+
+.buoc-dash__panel {
+  background: #fff;
+  border: 1px solid var(--color-base-150);
+}
+.buoc-dash__panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px var(--base);
+  border-bottom: 1px solid var(--color-base-150);
+}
+.buoc-dash__panel-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0;
+}
+.buoc-dash__panel-link {
+  font-size: 12px;
+  color: var(--color-base-600);
+}
+.buoc-dash__orders {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.buoc-dash__orders th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-base-500);
+  padding: 10px var(--base);
+}
+.buoc-dash__orders td {
+  padding: 12px var(--base);
+  border-top: 1px solid var(--color-base-100);
+}
+.buoc-dash__orders tr:hover td {
+  background: var(--color-base-50);
+}
+.buoc-dash__orders a {
+  color: var(--buoc-ink);
+  font-weight: 500;
+}
+.buoc-dash__num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+.buoc-dash__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 999px;
+  background: var(--color-base-100);
+  color: var(--color-base-700);
+  white-space: nowrap;
+}
+.buoc-dash__badge--pending {
+  background: #f8ecd6;
+  color: #7a5520;
+}
+.buoc-dash__badge--active {
+  background: #e4ecf3;
+  color: #2c4a63;
+}
+.buoc-dash__badge--done {
+  background: #e3eee2;
+  color: #2f5a2c;
+}
+.buoc-dash__badge--cancelled {
+  background: #f3e1df;
+  color: #8a2f28;
+}
+.buoc-dash__empty {
+  padding: var(--base);
+  color: var(--color-base-500);
+}
+
+@media (max-width: 1100px) {
+  .buoc-dash__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .buoc-dash__stats {
+    grid-template-columns: 1fr;
+  }
+  .buoc-dash__orders .buoc-dash__hide-sm {
+    display: none;
+  }
+}
+
+/* ——— Trang Tài liệu API & mục menu ——— */
+.buoc-api {
+  padding-top: calc(var(--base) * 1.5);
+  padding-bottom: calc(var(--base) * 3);
+}
+.buoc-api__head {
+  margin-bottom: calc(var(--base) * 1.2);
+}
+.buoc-api__lead {
+  max-width: 760px;
+  color: var(--color-base-600);
+  line-height: 1.6;
+  margin: 10px 0 calc(var(--base) * 1.2);
+}
+.buoc-api__section {
+  margin-bottom: var(--base);
+}
+.buoc-api__hint {
+  font-size: 12px;
+  color: var(--color-base-500);
+  font-family: var(--font-mono);
+}
+.buoc-api__note {
+  color: var(--color-base-600);
+  font-size: 12px;
+}
+.buoc-api code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--color-base-50);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.buoc-api__method {
+  display: inline-block;
+  min-width: 44px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #e4ecf3;
+  color: #2c4a63;
+}
+.buoc-api__method--post {
+  background: #e3eee2;
+  color: #2f5a2c;
+}
+.buoc-api-nav {
+  margin-top: calc(var(--base) * 0.6);
+  padding-top: calc(var(--base) * 0.6);
+  border-top: 1px solid var(--color-base-150);
+}
+.buoc-api-nav__label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-base-500);
+  margin-bottom: 6px;
+}
+.buoc-api-nav__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
