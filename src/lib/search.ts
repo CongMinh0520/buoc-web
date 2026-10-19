@@ -1,5 +1,6 @@
 import type { Product } from "./types";
-import { localePath, type Locale } from "@/i18n/config";
+// Đường dẫn tương đối kèm đuôi .ts để unit test (node --test) import được, không qua alias "@/"
+import { localePath, type Locale } from "../i18n/config.ts";
 
 /** Bỏ dấu tiếng Việt để tìm "giay" cũng ra "giày" */
 export const normalize = (s: string) =>
