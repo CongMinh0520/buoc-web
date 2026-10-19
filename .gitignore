@@ -47,3 +47,7 @@ test-results/
 .claude/
 AGENTS.md
 GO-LIVE.md
+
+.vercel
+.env*
+!.env.example
