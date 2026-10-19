@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { fail } from "@/server/i18n";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getPayloadClient } from "@/lib/cms";
@@ -24,7 +25,7 @@ async function requireCustomer() {
 
 export async function updateProfileAction(input: unknown): Promise<ActionResult> {
   const c = await requireCustomer().catch(() => null);
-  if (!c) return { ok: false, error: "Phiên đăng nhập đã hết. Vui lòng đăng nhập lại." };
+  if (!c) return fail("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
   const parsed = z
     .object({
       name: z.string().trim().min(2, "Vui lòng nhập tên").max(100),
@@ -35,7 +36,7 @@ export async function updateProfileAction(input: unknown): Promise<ActionResult>
       marketingOptIn: z.boolean(),
     })
     .safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const payload = await getPayloadClient();
   const d = parsed.data;
   await payload.update({
@@ -59,9 +60,9 @@ export async function updateProfileAction(input: unknown): Promise<ActionResult>
 }
 
 export async function changePasswordAction(input: { current: string; next: string; confirm: string }): Promise<ActionResult> {
-  if (!(await rateLimit("change-password", 5, 600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("change-password", 5, 600))) return fail(TOO_MANY);
   const c = await requireCustomer().catch(() => null);
-  if (!c) return { ok: false, error: "Phiên đăng nhập đã hết. Vui lòng đăng nhập lại." };
+  if (!c) return fail("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
   const parsed = z
     .object({
       current: z.string().min(1, "Nhập mật khẩu hiện tại"),
@@ -70,13 +71,13 @@ export async function changePasswordAction(input: { current: string; next: strin
     })
     .refine((d) => d.next === d.confirm, { message: "Mật khẩu xác nhận không khớp" })
     .safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const payload = await getPayloadClient();
   try {
     // Xác minh mật khẩu hiện tại bằng một lần đăng nhập (không đặt cookie)
     await payload.login({ collection: "customers", data: { email: c.email, password: parsed.data.current } });
   } catch {
-    return { ok: false, error: "Mật khẩu hiện tại không đúng." };
+    return fail("Mật khẩu hiện tại không đúng.");
   }
   await payload.update({ collection: "customers", id: c.id, user: c, overrideAccess: false, data: { password: parsed.data.next } });
   return { ok: true };
@@ -94,7 +95,7 @@ const addressSchema = z.object({
 
 async function writeAddresses(mutate: (list: z.infer<typeof addressSchema>[]) => z.infer<typeof addressSchema>[]): Promise<ActionResult> {
   const c = await requireCustomer().catch(() => null);
-  if (!c) return { ok: false, error: "Phiên đăng nhập đã hết. Vui lòng đăng nhập lại." };
+  if (!c) return fail("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
   const current = (c.addresses ?? []).map((a) => ({
     label: a.label,
     name: a.name,
@@ -114,7 +115,7 @@ async function writeAddresses(mutate: (list: z.infer<typeof addressSchema>[]) =>
 
 export async function saveAddressAction(input: { index: number | null; address: unknown }): Promise<ActionResult> {
   const parsed = addressSchema.safeParse(input.address);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const idx = typeof input.index === "number" ? input.index : null;
   return writeAddresses((list) => {
     const a = parsed.data;
@@ -135,9 +136,9 @@ export async function setDefaultAddressAction(index: number): Promise<ActionResu
 /** Thông báo: chỉ thao tác trên thông báo của chính khách hàng */
 export async function notificationAction(input: { op: "read" | "delete" | "read-all" | "delete-all"; id?: number }): Promise<ActionResult> {
   const c = await requireCustomer().catch(() => null);
-  if (!c) return { ok: false, error: "Phiên đăng nhập đã hết. Vui lòng đăng nhập lại." };
+  if (!c) return fail("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
   const parsed = z.object({ op: z.enum(["read", "delete", "read-all", "delete-all"]), id: z.number().int().positive().optional() }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Yêu cầu không hợp lệ" };
+  if (!parsed.success) return fail("Yêu cầu không hợp lệ");
   const payload = await getPayloadClient();
   const own = { customer: { equals: c.id } };
   const where = parsed.data.id ? { and: [own, { id: { equals: parsed.data.id } }] } : own;
@@ -156,19 +157,19 @@ export async function notificationAction(input: { op: "read" | "delete" | "read-
  * yêu cầu lưu dữ liệu giao dịch tối thiểu 3 năm (hóa đơn, bảo hành, khiếu nại) — đã nêu trong chính sách bảo mật.
  */
 export async function deleteAccountAction(input: { password: string; confirm: string }): Promise<ActionResult> {
-  if (!(await rateLimit("delete-account", 5, 3600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("delete-account", 5, 3600))) return fail(TOO_MANY);
   const c = await requireCustomer().catch(() => null);
-  if (!c) return { ok: false, error: "Phiên đăng nhập đã hết. Vui lòng đăng nhập lại." };
+  if (!c) return fail("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
   const parsed = z
     .object({ password: z.string().min(1, "Nhập mật khẩu để xác nhận"), confirm: z.string().trim() })
-    .refine((d) => d.confirm.toUpperCase() === "XÓA", { message: 'Gõ chữ "XÓA" để xác nhận' })
+    .refine((d) => ["XÓA", "DELETE"].includes(d.confirm.toUpperCase()), { message: 'Gõ chữ "XÓA" để xác nhận' })
     .safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const payload = await getPayloadClient();
   try {
     await payload.login({ collection: "customers", data: { email: c.email, password: parsed.data.password } });
   } catch {
-    return { ok: false, error: "Mật khẩu không đúng." };
+    return fail("Mật khẩu không đúng.");
   }
   // Đăng xuất TRƯỚC khi xóa: sau khi xóa, Payload không còn nhận ra phiên nên sẽ không xóa cookie
   await logout({ config });

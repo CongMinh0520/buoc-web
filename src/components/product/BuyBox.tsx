@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatVnd } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/components/providers/CartProvider";
+import { useT } from "@/components/providers/LocaleProvider";
 
 export function BuyBox({ product, priceNote }: { product: Product; priceNote?: string }) {
   const { add } = useCart();
@@ -11,11 +12,13 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
   const [size, setSize] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [openPanel, setOpenPanel] = useState<number>(0);
+  const t = useT();
+  const tp = t.product;
 
   const panels = [
-    { title: "MÔ TẢ SẢN PHẨM", body: product.description },
-    { title: "CHI TIẾT & CHẤT LIỆU", body: product.details },
-    { title: "BẢNG SIZE & CÁCH CHỌN", body: product.sizing },
+    { title: tp.description, body: product.description },
+    { title: tp.details, body: product.details },
+    { title: tp.sizing, body: product.sizing },
   ];
 
   const stockOf = (s: string) => product.stock[`${color.name}|${s}`] ?? 0;
@@ -26,7 +29,7 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
       setError(true);
       return;
     }
-    add({ slug: product.slug, name: product.name, price: product.price, image: product.images[0] ?? "", color: color.name, size });
+    add({ slug: product.slug, name: product.name, price: product.price, image: product.images[0] ?? "", color: color.name, colorLabel: color.label, size });
   };
 
   return (
@@ -36,7 +39,7 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
       {priceNote && <p className="mt-1 text-[10px] tracking-[0.04em] text-[#6d6d6b]">{priceNote}</p>}
 
       <p className="mt-9 text-[10px] tracking-[0.12em] text-[#101010] uppercase">
-        Màu sắc: <b className="font-semibold">{color.name}</b>
+        {tp.colorLabel}: <b className="font-semibold">{color.label}</b>
       </p>
       <div className="mt-3 flex gap-2">
         {product.colors.map((c) => (
@@ -46,7 +49,7 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
               setColor(c);
               if (size && (product.stock[`${c.name}|${size}`] ?? 0) <= 0) setSize(null);
             }}
-            aria-label={`Màu ${c.name}`}
+            aria-label={tp.colorAria(c.label)}
             aria-pressed={c.name === color.name}
             className={`size-[35px] rounded-[3px] border p-[3px] ${c.name === color.name ? "border-[#151515]" : "border-transparent hover:border-black/30"}`}
           >
@@ -57,10 +60,10 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
 
       <div className="mt-7 flex items-baseline justify-between">
         <p className="text-[10px] tracking-[0.12em] text-[#101010] uppercase">
-          Size (EU): <b className="font-semibold">{size ?? "—"}</b>
+          {tp.sizeLabel}: <b className="font-semibold">{size ?? "—"}</b>
         </p>
         <button className="text-[10px] tracking-[0.08em] text-[#6d6d6b] underline" onClick={() => setOpenPanel(2)}>
-          Hướng dẫn chọn size
+          {tp.sizeGuide}
         </button>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-[7px]">
@@ -75,7 +78,7 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
               }}
               disabled={out}
               aria-pressed={s === size}
-              aria-label={out ? `Size ${s} (hết hàng)` : `Size ${s}`}
+              aria-label={tp.sizeAria(s, out)}
               className={`h-[41px] border text-[11px] transition-colors disabled:cursor-not-allowed disabled:border-[#e5e5e5] disabled:text-black/25 disabled:line-through ${
                 s === size ? "border-[#111] bg-[#111] text-white" : "border-[#ccc] bg-white text-[#111] hover:border-[#111]"
               }`}
@@ -85,18 +88,18 @@ export function BuyBox({ product, priceNote }: { product: Product; priceNote?: s
           );
         })}
       </div>
-      {error && <p className="mt-2 text-[11px] text-danger">Vui lòng chọn size trước khi thêm vào giỏ.</p>}
+      {error && <p className="mt-2 text-[11px] text-danger">{tp.chooseSize}</p>}
 
       <button
         onClick={onAdd}
         disabled={soldOut}
         className="mt-7 h-[52px] w-full bg-[#111] text-[10px] font-semibold tracking-[0.14em] text-white uppercase transition-colors hover:bg-ink-3 disabled:bg-black/30"
       >
-        {soldOut ? "Màu này đã hết hàng" : "Thêm vào giỏ"}
+        {soldOut ? tp.soldOut : tp.addToCart}
       </button>
       <div className="mt-3 flex justify-between text-[9px] tracking-[0.04em] text-[#6d6d6b]">
-        <span>Miễn phí vận chuyển toàn quốc</span>
-        <span>Đổi size trong 30 ngày</span>
+        <span>{t.common.freeShipping}</span>
+        <span>{t.common.sizeExchange}</span>
       </div>
 
       <div className="mt-8 border-t border-[#d9d7d1]">

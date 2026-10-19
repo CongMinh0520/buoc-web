@@ -21,7 +21,7 @@ const converters: JSXConvertersFunction = ({ defaultConverters }) => ({
           <div className={`grid gap-3 ${srcs.length > 1 ? "sm:grid-cols-2" : ""}`}>
             {srcs.map((s, i) => (
               <div key={i} className={`relative bg-stone ${srcs.length > 1 ? "aspect-[3/4]" : "aspect-[16/9]"}`}>
-                <Img src={s} alt={f.caption || "Hình minh họa"} sizes="(min-width:1024px) 900px, 100vw" />
+                <Img src={s} alt={f.caption || ""} sizes="(min-width:1024px) 900px, 100vw" />
               </div>
             ))}
           </div>

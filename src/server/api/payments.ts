@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { isLocale, localePath, defaultLocale } from "@/i18n/config";
 import { getPayloadClient } from "@/lib/cms";
 import { findOrderByCode, markOrderPaid, markOrderPaymentFailed, orderResultPath, orderToken } from "@/server/orders";
 import { verifyMomo } from "@/server/payments/momo";
@@ -13,13 +14,16 @@ type Tx = { provider: string; ref: string; amount: number; result: string; raw?:
  */
 async function finishReturn(code: string, success: boolean, tx: Tx): Promise<never> {
   const payload = await getPayloadClient();
+  // Quay về đúng ngôn ngữ khách đã dùng khi đặt hàng
+  const order = await findOrderByCode(payload, code);
+  const lang = isLocale(order?.locale) ? order.locale : defaultLocale;
   if (success) {
     const r = await markOrderPaid(payload, code, tx);
-    if (r === "ok" || r === "already") redirect(orderResultPath(code));
+    if (r === "ok" || r === "already") redirect(localePath(lang, orderResultPath(code)));
   } else {
     await markOrderPaymentFailed(payload, code, tx);
   }
-  redirect(`/thanh-toan-that-bai?code=${encodeURIComponent(code)}&t=${orderToken(code)}`);
+  redirect(localePath(lang, `/thanh-toan-that-bai?code=${encodeURIComponent(code)}&t=${orderToken(code)}`));
 }
 
 /* ——— VNPay ——— */

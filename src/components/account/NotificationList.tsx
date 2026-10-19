@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { useT } from "@/components/providers/LocaleProvider";
 import { useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { notificationAction } from "@/server/actions/account";
@@ -19,6 +20,8 @@ type Op = { op: "read" | "delete" | "read-all" | "delete-all"; id?: number };
 export function NotificationList({ items }: { items: NotificationItem[] }) {
   const router = useRouter();
   const [, start] = useTransition();
+  const t = useT();
+  const tn = t.account.notifications;
   // Cập nhật lạc quan, rồi đồng bộ lại từ server
   const [list, apply] = useOptimistic(items, (l: NotificationItem[], a: Op) => {
     if (a.op === "read-all") return l.map((n) => ({ ...n, unread: false }));
@@ -40,8 +43,8 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[12px] tracking-[0.08em] text-black/55 uppercase">
           {unread > 0
-            ? `Có ${unread} thông báo chưa đọc`
-            : "Không có thông báo chưa đọc"}
+            ? tn.unread(unread)
+            : tn.noneUnread}
         </p>
         {list.length > 0 && (
           <div className="flex gap-5 text-[11px] tracking-[0.1em] uppercase">
@@ -50,15 +53,15 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
               className="underline underline-offset-4 disabled:opacity-40"
               disabled={unread === 0}
             >
-              Đánh dấu tất cả đã đọc
+              {tn.readAll}
             </button>
             <button
               onClick={() =>
-                confirm("Xóa tất cả thông báo?") && act({ op: "delete-all" })
+                confirm(tn.confirmDeleteAll) && act({ op: "delete-all" })
               }
               className="text-black/55 underline underline-offset-4 hover:text-black"
             >
-              Xóa tất cả
+              {tn.deleteAll}
             </button>
           </div>
         )}
@@ -66,7 +69,7 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
 
       {list.length === 0 ? (
         <p className="mt-8 border border-black/15 bg-white py-16 text-center text-[13px] text-black/50">
-          Bạn chưa có thông báo nào.
+          {tn.empty}
         </p>
       ) : (
         <ul className="mt-8 border border-black bg-white">
@@ -78,7 +81,7 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
               <div className="flex gap-4">
                 <span
                   className={`mt-1.5 size-2 shrink-0 ${n.unread ? "bg-black" : "border border-black/30"}`}
-                  aria-label={n.unread ? "Chưa đọc" : "Đã đọc"}
+                  aria-label={n.unread ? tn.isUnread : tn.isRead}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -108,14 +111,14 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
                         onClick={() => act({ op: "read", id: n.id })}
                         className="hover:text-black"
                       >
-                        Đánh dấu đã đọc
+                        {tn.markRead}
                       </button>
                     )}
                     <button
                       onClick={() => act({ op: "delete", id: n.id })}
                       className="hover:text-black"
                     >
-                      Xóa
+                      {t.common.delete}
                     </button>
                   </div>
                 </div>

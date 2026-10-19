@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { formatDate, formatVnd } from "@/lib/format";
+import { useT } from "@/components/providers/LocaleProvider";
 
 export type OrderStatus =
   | "pending"
@@ -11,19 +12,6 @@ export type OrderStatus =
   | "shipping"
   | "delivered"
   | "cancelled";
-const orderStatusLabel: Record<OrderStatus, string> = {
-  pending: "Chờ thanh toán",
-  confirmed: "Đã xác nhận",
-  processing: "Đang xử lý",
-  shipping: "Đang giao hàng",
-  delivered: "Đã giao hàng",
-  cancelled: "Đã hủy",
-};
-const payLabel: Record<string, string> = {
-  cod: "COD",
-  vnpay: "VNPay",
-  momo: "MoMo",
-};
 
 export type AccountOrder = {
   id: string;
@@ -41,19 +29,14 @@ export type AccountOrder = {
 };
 import { Img } from "@/components/ui/Img";
 
-const tabs: { key: OrderStatus | "all"; label: string }[] = [
-  { key: "all", label: "Tất cả" },
-  { key: "processing", label: "Đang xử lý" },
-  { key: "pending", label: "Chờ thanh toán" },
-  { key: "shipping", label: "Đang giao hàng" },
-  { key: "delivered", label: "Đã giao hàng" },
-  { key: "cancelled", label: "Đã hủy" },
-];
+const tabs: (OrderStatus | "all")[] = ["all", "processing", "pending", "shipping", "delivered", "cancelled"];
 
 const vnd = (n: number) => "VND " + formatVnd(n).replace(" ₫", "");
 
 export function OrderList({ orders }: { orders: AccountOrder[] }) {
   const [tab, setTab] = useState<OrderStatus | "all">("all");
+  const t = useT();
+  const to_ = t.account.orders;
   const [open, setOpen] = useState<string | null>(orders[0]?.id ?? null);
   const list = tab === "all" ? orders : orders.filter((o) => o.status === tab);
 
@@ -63,19 +46,19 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
         className="no-scrollbar flex gap-6 overflow-x-auto border-b border-black"
         role="tablist"
       >
-        {tabs.map((t) => (
+        {tabs.map((key) => (
           <button
-            key={t.key}
+            key={key}
             role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
             className={`-mb-px shrink-0 border-b-2 pb-4 text-[11px] tracking-[0.12em] uppercase ${
-              tab === t.key
+              tab === key
                 ? "border-black text-black"
                 : "border-transparent text-black/45 hover:text-black"
             }`}
           >
-            {t.label}
+            {key === "all" ? t.common.all : t.orderStatus[key]}
           </button>
         ))}
       </div>
@@ -83,8 +66,8 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
       {list.length === 0 ? (
         <p className="py-20 text-center text-[13px] text-black/50">
           {orders.length === 0
-            ? "Bạn chưa có đơn hàng nào."
-            : "Chưa có đơn hàng nào ở trạng thái này."}
+            ? to_.empty
+            : to_.emptyTab}
         </p>
       ) : (
         <div className="mt-10 border-t border-black">
@@ -112,13 +95,13 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
                     <span
                       className={`size-2.5 ${o.status === "cancelled" ? "border border-black" : "bg-black"}`}
                     />
-                    {orderStatusLabel[o.status]}
+                    {t.orderStatus[o.status]}
                   </span>
                   <span className="text-[11px] tracking-[0.08em] text-black/55 uppercase">
-                    {String(qty).padStart(2, "0")} sản phẩm
+                    {t.common.items(qty)}
                   </span>
                   <span className="flex items-center justify-end gap-1.5 text-[11px] font-medium tracking-[0.1em] uppercase">
-                    {isOpen ? "Thu lại" : "Xem chi tiết"}
+                    {isOpen ? to_.collapse : to_.expand}
                     <ChevronDown
                       size={16}
                       strokeWidth={1.5}
@@ -151,7 +134,7 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
                               {i.note}
                             </p>
                             <span className="inline-block border border-black px-2.5 py-1 text-[11px] tracking-[0.08em] uppercase">
-                              Số lượng: {String(i.qty).padStart(2, "0")}
+                              {to_.qty(i.qty)}
                             </span>
                           </div>
                         </div>
@@ -159,7 +142,7 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
                     </div>
                     <div className="p-5 sm:p-6">
                       <h4 className="text-[11px] font-medium tracking-[0.12em] uppercase">
-                        Địa chỉ giao hàng
+                        {to_.shippingAddress}
                       </h4>
                       <div className="mt-3 flex gap-3">
                         <span className="w-px bg-black" />
@@ -173,10 +156,10 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
                         </div>
                       </div>
                       <h4 className="mt-6 text-[11px] font-medium tracking-[0.12em] uppercase">
-                        Hình thức thanh toán
+                        {to_.paymentMethod}
                       </h4>
                       <span className="mt-3 inline-flex min-w-[120px] justify-center border border-black px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase">
-                        {payLabel[o.payment] ?? o.payment}
+                        {o.payment === "cod" ? t.payMethod.codShort : (t.payMethod[o.payment] ?? o.payment)}
                       </span>
                     </div>
                   </div>

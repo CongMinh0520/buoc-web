@@ -3,12 +3,15 @@
 import { useState } from "react";
 import type { Article } from "@/lib/types";
 import { ArticleCard } from "./ArticleCard";
+import { useT } from "@/components/providers/LocaleProvider";
 
-const cats = ["Tất cả", "Bộ sưu tập", "Xưởng", "Chăm sóc", "Sự kiện"] as const;
+// Giá trị chủ đề lưu trong CMS (tiếng Việt); nhãn hiển thị lấy từ từ điển
+const cats = ["all", "Bộ sưu tập", "Xưởng", "Chăm sóc", "Sự kiện"] as const;
 
 export function JournalList({ articles }: { articles: Article[] }) {
-  const [cat, setCat] = useState<(typeof cats)[number]>("Tất cả");
-  const list = cat === "Tất cả" ? articles : articles.filter((a) => a.category === cat);
+  const t = useT();
+  const [cat, setCat] = useState<(typeof cats)[number]>("all");
+  const list = cat === "all" ? articles : articles.filter((a) => a.category === cat);
 
   return (
     <>
@@ -22,12 +25,12 @@ export function JournalList({ articles }: { articles: Article[] }) {
               cat === c ? "border-black bg-black text-white" : "border-[#ccc] bg-white text-ink-2 hover:border-black"
             }`}
           >
-            {c}
+            {c === "all" ? t.common.all : t.journal.categories[c]}
           </button>
         ))}
       </div>
       {list.length === 0 ? (
-        <p className="py-16 text-center text-[13px] text-black/50">Chưa có bài viết trong mục này.</p>
+        <p className="py-16 text-center text-[13px] text-black/50">{t.journal.empty}</p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {list.map((a) => (

@@ -4,11 +4,13 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { useT } from "@/components/providers/LocaleProvider";
 
 const PER_PAGE = 8;
 
 export function PagedGrid({ products, label }: { products: Product[]; label: string }) {
   const [page, setPage] = useState(0);
+  const t = useT();
   const pages = Math.ceil(products.length / PER_PAGE);
   const list = products.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
 
@@ -17,16 +19,16 @@ export function PagedGrid({ products, label }: { products: Product[]; label: str
       <ul className="mt-8 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4">
         {list.map((p) => (
           <li key={p.slug}>
-            <ProductCard product={p} />
+            <ProductCard product={p} newLabel={t.common.newBadge} />
           </li>
         ))}
       </ul>
       {pages > 1 && (
-        <nav aria-label={`Phân trang ${label}`} className="mt-10 flex items-center justify-center gap-2">
+        <nav aria-label={t.collection.pagination(label)} className="mt-10 flex items-center justify-center gap-2">
           <button
             onClick={() => setPage((v) => Math.max(0, v - 1))}
             disabled={page === 0}
-            aria-label="Trang trước"
+            aria-label={t.collection.prev}
             className="grid size-9 place-items-center border border-black/15 disabled:opacity-30"
           >
             <ChevronLeft size={16} strokeWidth={1.5} />
@@ -44,7 +46,7 @@ export function PagedGrid({ products, label }: { products: Product[]; label: str
           <button
             onClick={() => setPage((v) => Math.min(pages - 1, v + 1))}
             disabled={page === pages - 1}
-            aria-label="Trang sau"
+            aria-label={t.collection.next}
             className="grid size-9 place-items-center border border-black/15 disabled:opacity-30"
           >
             <ChevronRight size={16} strokeWidth={1.5} />

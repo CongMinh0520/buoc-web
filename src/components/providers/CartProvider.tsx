@@ -7,7 +7,10 @@ export type CartItem = {
   name: string;
   price: number;
   image: string;
+  /** Mã màu nội bộ (khớp tồn kho) */
   color: string;
+  /** Tên màu hiển thị theo ngôn ngữ lúc thêm vào giỏ */
+  colorLabel?: string;
   size: string;
   qty: number;
 };

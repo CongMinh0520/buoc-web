@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { useT } from "@/components/providers/LocaleProvider";
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useCart } from "@/components/providers/CartProvider";
@@ -9,6 +10,7 @@ import { Img } from "@/components/ui/Img";
 
 export function CartToast() {
   const { lastAdded, dismissToast } = useCart();
+  const t = useT();
 
   useEffect(() => {
     if (!lastAdded) return;
@@ -24,8 +26,8 @@ export function CartToast() {
       className="fixed top-[68px] right-4 z-[60] w-[min(340px,calc(100vw-32px))] border border-black bg-white p-4 shadow-[0_16px_40px_-16px_rgba(0,0,0,0.35)]"
     >
       <div className="flex items-start justify-between">
-        <p className="label-caps font-medium">Đã thêm vào giỏ</p>
-        <button onClick={dismissToast} aria-label="Đóng thông báo">
+        <p className="label-caps font-medium">{t.cartToast.added}</p>
+        <button onClick={dismissToast} aria-label={t.cartToast.close}>
           <X size={16} strokeWidth={1.4} />
         </button>
       </div>
@@ -36,13 +38,13 @@ export function CartToast() {
         <div className="text-[12px]">
           <p className="font-medium tracking-[0.06em] uppercase">{lastAdded.name}</p>
           <p className="mt-1 text-black/55">
-            {lastAdded.color} · Size {lastAdded.size}
+            {t.common.colorSize(lastAdded.colorLabel ?? lastAdded.color, lastAdded.size)}
           </p>
           <p className="mt-1">{formatVnd(lastAdded.price)}</p>
         </div>
       </div>
       <Link href="/gio-hang" onClick={dismissToast} className="btn-dark mt-4 w-full">
-        Xem giỏ hàng
+        {t.cartToast.viewCart}
       </Link>
     </div>
   );

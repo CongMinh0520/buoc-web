@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { FieldLabel } from "@/components/account/AccountShell";
 import { createBookingAction } from "@/server/actions/site";
+import { useT } from "@/components/providers/LocaleProvider";
 
 type Session = { title: string; day: string; time: string; seats: number };
 
@@ -11,12 +12,14 @@ export function BookingForm({ sessions, stores, note }: { sessions: Session[]; s
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const t = useT();
+  const w = t.workshop;
   const label = (s: Session) => `${s.title} — ${s.day} ${s.time}`;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr]">
       <div>
-        <p className="eyebrow text-black/50">Lịch tuần này</p>
+        <p className="eyebrow text-black/50">{w.thisWeek}</p>
         <ul className="mt-4 border-t border-black">
           {sessions.map((s, i) => (
             <li key={s.title + s.day + s.time} className="border-b border-black">
@@ -28,7 +31,7 @@ export function BookingForm({ sessions, stores, note }: { sessions: Session[]; s
                     {s.day} · {s.time}
                   </span>
                 </span>
-                <span className="text-[11px] tracking-[0.08em] text-black/50 uppercase">Còn {s.seats} chỗ</span>
+                <span className="text-[11px] tracking-[0.08em] text-black/50 uppercase">{w.seats(s.seats)}</span>
               </label>
             </li>
           ))}
@@ -38,12 +41,12 @@ export function BookingForm({ sessions, stores, note }: { sessions: Session[]; s
 
       {done ? (
         <div className="border border-black bg-white p-8" role="status">
-          <p className="label-caps font-medium">Đã ghi nhận đăng ký</p>
+          <p className="label-caps font-medium">{w.booked}</p>
           <p className="mt-3 text-[14px] leading-6 text-black/65">
-            Chúng tôi sẽ gọi xác nhận trong vòng 24 giờ cho buổi “{sessions[session]?.title}” ({sessions[session]?.day}, {sessions[session]?.time}).
+            {w.bookedDesc(sessions[session]?.title ?? "", sessions[session]?.day ?? "", sessions[session]?.time ?? "")}
           </p>
           <button onClick={() => setDone(false)} className="btn-outline mt-6">
-            Đăng ký buổi khác
+            {w.another}
           </button>
         </div>
       ) : (
@@ -66,17 +69,17 @@ export function BookingForm({ sessions, stores, note }: { sessions: Session[]; s
             });
           }}
         >
-          <p className="label-caps font-medium">Đặt lịch</p>
+          <p className="label-caps font-medium">{w.book}</p>
           <label>
-            <FieldLabel required>Họ và tên</FieldLabel>
-            <input id="booking-name" name="name" required maxLength={100} className="field" placeholder="Nhập họ và tên" autoComplete="name" />
+            <FieldLabel required>{w.name}</FieldLabel>
+            <input id="booking-name" name="name" required maxLength={100} className="field" placeholder={w.namePh} autoComplete="name" />
           </label>
           <label>
-            <FieldLabel required>Số điện thoại</FieldLabel>
-            <input id="booking-phone" name="phone" required type="tel" maxLength={15} className="field" placeholder="Nhập số điện thoại" autoComplete="tel" />
+            <FieldLabel required>{w.phone}</FieldLabel>
+            <input id="booking-phone" name="phone" required type="tel" maxLength={15} className="field" placeholder={w.phonePh} autoComplete="tel" />
           </label>
           <label>
-            <FieldLabel>Cửa hàng</FieldLabel>
+            <FieldLabel>{w.store}</FieldLabel>
             <select id="booking-store" name="store" className="field">
               {stores.map((s) => (
                 <option key={s}>{s}</option>
@@ -91,7 +94,7 @@ export function BookingForm({ sessions, stores, note }: { sessions: Session[]; s
             </p>
           )}
           <button type="submit" disabled={pending} className="btn-dark mt-2 disabled:opacity-60">
-            {pending ? "Đang gửi…" : "Giữ chỗ"}
+            {pending ? w.sending : w.reserve}
           </button>
         </form>
       )}

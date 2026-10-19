@@ -2,14 +2,15 @@ import { Img } from "@/components/ui/Img";
 import { StoreFinder } from "@/components/about/StoreFinder";
 import { getAbout, getSiteSettings, getStores } from "@/lib/cms";
 import { JsonLd, pageMeta, storesJsonLd } from "@/lib/seo";
+import { getLocale, getT } from "@/i18n/server";
 
 export async function generateMetadata() {
-  const a = await getAbout();
-  return pageMeta({ title: a.meta?.title || a.title, description: a.meta?.description || a.originText?.slice(0, 160) || "", path: "/gioi-thieu", image: a.heroImage });
+  const [a, locale] = await Promise.all([getAbout(), getLocale()]);
+  return pageMeta({ locale, title: a.meta?.title || a.title, description: a.meta?.description || a.originText?.slice(0, 160) || "", path: "/gioi-thieu", image: a.heroImage });
 }
 
 export default async function AboutPage() {
-  const [a, stores, s] = await Promise.all([getAbout(), getStores(), getSiteSettings()]);
+  const [a, stores, s, t] = await Promise.all([getAbout(), getStores(), getSiteSettings(), getT()]);
   return (
     <>
       <JsonLd data={storesJsonLd(stores, s.brandName)} />
@@ -87,7 +88,7 @@ export default async function AboutPage() {
       </section>
 
       <section id="cua-hang" className="mx-auto mt-24 mb-24 max-w-site scroll-mt-20 px-4 sm:px-5">
-        <h2 className="mb-8 text-center font-display text-[40px] font-medium">Danh sách cửa hàng</h2>
+        <h2 className="mb-8 text-center font-display text-[40px] font-medium">{t.stores.title}</h2>
         <StoreFinder stores={stores} />
       </section>
     </>

@@ -5,12 +5,12 @@ import { ProfileForm } from "@/components/account/ProfileForm";
 import { PrivacyPanel } from "@/components/account/PrivacyPanel";
 import { getCurrentCustomer } from "@/server/auth";
 import { pageMeta } from "@/lib/seo";
+import { getLocale, getT } from "@/i18n/server";
 
-export const metadata = pageMeta({
-  title: "Thông tin tài khoản",
-  path: "/tai-khoan",
-  noindex: true,
-});
+export async function generateMetadata() {
+  const [locale, t] = await Promise.all([getLocale(), getT()]);
+  return pageMeta({ locale, title: t.account.titles.info, path: "/tai-khoan", noindex: true });
+}
 
 async function Content() {
   const c = await getCurrentCustomer();
@@ -33,9 +33,10 @@ async function Content() {
   );
 }
 
-export default function AccountInfoPage() {
+export default async function AccountInfoPage() {
+  const t = await getT();
   return (
-    <AccountShell title="Thông tin tài khoản" active="info">
+    <AccountShell title={t.account.titles.info} active="info">
       <Suspense fallback={<AccountSkeleton />}>
         <Content />
       </Suspense>

@@ -367,6 +367,10 @@ export interface Order {
   id: number;
   code: string;
   customer?: (number | null) | Customer;
+  /**
+   * Email và trang kết quả thanh toán gửi theo ngôn ngữ này.
+   */
+  locale?: ('vi' | 'en') | null;
   email: string;
   status: 'pending' | 'confirmed' | 'processing' | 'shipping' | 'delivered' | 'cancelled';
   shipping: {
@@ -951,6 +955,7 @@ export interface LookbooksSelect<T extends boolean = true> {
 export interface OrdersSelect<T extends boolean = true> {
   code?: T;
   customer?: T;
+  locale?: T;
   email?: T;
   status?: T;
   shipping?:

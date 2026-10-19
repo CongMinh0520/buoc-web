@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { useLocale, useLocalePath, useT } from "@/components/providers/LocaleProvider";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
@@ -13,11 +14,14 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const locale = useLocale();
+  const to = useLocalePath();
+  const t = useT();
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (open) loadSearchIndex().then(setProducts);
-  }, [open]);
+    if (open) loadSearchIndex(locale).then(setProducts);
+  }, [open, locale]);
 
   useEffect(() => {
     if (!open) return;
@@ -42,7 +46,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
               e.preventDefault();
               if (!q.trim()) return;
               onClose();
-              router.push(`/tim-kiem?q=${encodeURIComponent(q.trim())}`);
+              router.push(to(`/tim-kiem?q=${encodeURIComponent(q.trim())}`));
             }}
             className="flex items-center gap-3 border-b border-black pb-3"
           >
@@ -52,23 +56,23 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
               id="search-overlay-input"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm giày, bộ sưu tập…"
+              placeholder={t.search.placeholder}
               className="flex-1 bg-transparent font-display text-[26px] outline-none placeholder:text-black/30"
-              aria-label="Từ khóa tìm kiếm"
+              aria-label={t.search.keyword}
             />
-            <button type="button" onClick={onClose} aria-label="Đóng tìm kiếm" className="p-1">
+            <button type="button" onClick={onClose} aria-label={t.search.close} className="p-1">
               <X size={22} strokeWidth={1.25} />
             </button>
           </form>
           <div className="mt-5 flex items-baseline justify-between">
-            <p className="eyebrow text-black/45">{q.trim() ? `${all.length} kết quả` : "Mới về"}</p>
+            <p className="eyebrow text-black/45">{q.trim() ? t.search.results(all.length) : t.search.newArrivals}</p>
             {q.trim() && all.length > 0 && (
               <Link href={`/tim-kiem?q=${encodeURIComponent(q.trim())}`} onClick={onClose} className="eyebrow underline underline-offset-4">
-                Xem tất cả kết quả
+                {t.search.seeAll}
               </Link>
             )}
           </div>
-          {q.trim() && all.length === 0 && <p className="py-10 text-[13px] text-black/50">Không tìm thấy sản phẩm cho “{q}”.</p>}
+          {q.trim() && all.length === 0 && <p className="py-10 text-[13px] text-black/50">{t.search.noneFor(q)}</p>}
           <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {results.map((p) => (
               <li key={p.slug}>

@@ -9,9 +9,9 @@ function Shell({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function ProductSkeleton() {
+export function ProductSkeleton({ label = "Đang tải sản phẩm" }: { label?: string }) {
   return (
-    <Shell label="Đang tải sản phẩm">
+    <Shell label={label}>
       <section className="grid lg:grid-cols-[64%_36%]">
         <div className="grid grid-cols-2 bg-stone">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -56,9 +56,9 @@ export function GridSkeleton({ label = "Đang tải" }: { label?: string }) {
   );
 }
 
-export function ArticleSkeleton() {
+export function ArticleSkeleton({ label = "Đang tải bài viết" }: { label?: string }) {
   return (
-    <Shell label="Đang tải bài viết">
+    <Shell label={label}>
       <section className="h-[480px] bg-ink-2/80 lg:h-[540px]" />
       <div className="mx-auto max-w-[794px] space-y-3 px-4 py-12 sm:px-10">
         {["w-full", "w-11/12", "w-full", "w-4/5", "w-full", "w-2/3"].map((w, i) => (

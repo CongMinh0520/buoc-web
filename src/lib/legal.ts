@@ -5,6 +5,6 @@ import { getPolicies } from "./cms";
  * Dạng: "gia@v2, bao-mat@2026-10-15, …" — dùng trường "Phiên bản" của chính sách, nếu trống thì dùng ngày cập nhật.
  */
 export async function policyVersionSnapshot(): Promise<string> {
-  const policies = await getPolicies();
+  const policies = await getPolicies("vi");
   return policies.map((p) => `${p.slug}@${p.version || p.updatedAt.slice(0, 10)}`).join(", ").slice(0, 1000);
 }

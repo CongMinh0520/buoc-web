@@ -3,11 +3,13 @@ import { WorkshopHero } from "@/components/workshop/WorkshopHero";
 import { BookingForm } from "@/components/workshop/BookingForm";
 import { getStores, getWorkshop } from "@/lib/cms";
 import { pageMeta } from "@/lib/seo";
+import { getLocale, getT } from "@/i18n/server";
 
 export async function generateMetadata() {
-  const w = await getWorkshop();
+  const [w, locale, t] = await Promise.all([getWorkshop(), getLocale(), getT()]);
   return pageMeta({
-    title: w.meta?.title || "Xưởng mở",
+    locale,
+    title: w.meta?.title || t.workshop.metaTitle,
     description: w.meta?.description || w.intro?.slice(0, 160) || "",
     path: "/xuong-mo",
     image: w.heroImage,

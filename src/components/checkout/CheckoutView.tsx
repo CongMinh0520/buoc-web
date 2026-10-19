@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { useLocalePath, useT } from "@/components/providers/LocaleProvider";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useCart } from "@/components/providers/CartProvider";
 import { useAuthModal } from "@/components/providers/AuthProvider";
@@ -12,14 +13,16 @@ import { FieldLabel } from "@/components/account/AccountShell";
 type Quote = { lines: QuoteLine[]; subtotal: number; shippingFee: number; total: number; methods: { vnpay: boolean; momo: boolean } };
 type Method = "cod" | "vnpay" | "momo";
 
-const methodInfo: Record<Method, { label: string; desc: string }> = {
-  cod: { label: "Thanh toán khi nhận hàng (COD)", desc: "Trả tiền mặt hoặc chuyển khoản cho nhân viên giao hàng." },
-  vnpay: { label: "VNPay", desc: "Thẻ ATM nội địa, QR ngân hàng, Visa/Mastercard qua cổng VNPay." },
-  momo: { label: "Ví MoMo", desc: "Thanh toán bằng ví MoMo hoặc thẻ liên kết." },
-};
+const METHODS: Method[] = ["cod", "vnpay", "momo"];
 
 export function CheckoutView({ brandName, priceNote }: { brandName: string; priceNote: string }) {
   const { items, ready, clear } = useCart();
+  const t = useT();
+  const to = useLocalePath();
+  const c = t.checkout;
+  const methodInfo = c.methods;
+  // Tên sản phẩm/màu hiển thị theo ngôn ngữ lúc thêm vào giỏ (báo giá từ server dùng dữ liệu gốc)
+  const shown = (slug: string, color: string, size: string) => items.find((i) => i.slug === slug && i.color === color && i.size === size);
   const { customer, open } = useAuthModal();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -54,9 +57,9 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center py-28 text-center">
-        <p className="font-display text-[30px] font-medium uppercase">Giỏ hàng trống</p>
+        <p className="font-display text-[30px] font-medium uppercase">{t.cart.empty}</p>
         <Link href="/danh-muc/tat-ca" className="btn-outline mt-8">
-          Tiếp tục mua sắm
+          {t.cart.continue}
         </Link>
       </div>
     );
@@ -82,7 +85,7 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
       });
       if (!r.ok) return setError(r.error);
       clear();
-      window.location.assign(r.data!.redirect);
+      window.location.assign(to(r.data!.redirect));
     });
   };
 
@@ -91,43 +94,43 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
       <div className="space-y-10">
         {!customer && (
           <p className="border border-black/15 bg-white px-4 py-3 text-[13px] text-black/65">
-            Đã có tài khoản?{" "}
+            {c.haveAccount}{" "}
             <button type="button" onClick={() => open("login")} className="text-black underline">
-              Đăng nhập
+              {c.login}
             </button>{" "}
-            để điền sẵn địa chỉ và tích điểm cho đơn này.
+            {c.loginHint}
           </p>
         )}
         <section>
-          <h2 className="border-b border-black pb-2 text-[12px] font-medium tracking-[0.12em] uppercase">Thông tin nhận hàng</h2>
+          <h2 className="border-b border-black pb-2 text-[12px] font-medium tracking-[0.12em] uppercase">{c.shippingInfo}</h2>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <label className="md:col-span-2">
-              <FieldLabel required>Email (nhận xác nhận đơn)</FieldLabel>
+              <FieldLabel required>{c.email}</FieldLabel>
               <input id="co-email" name="email" type="email" required defaultValue={profile?.email} className="field" autoComplete="email" />
             </label>
             <label>
-              <FieldLabel required>Người nhận</FieldLabel>
+              <FieldLabel required>{c.recipient}</FieldLabel>
               <input id="co-name" name="name" required defaultValue={profile?.name} className="field" autoComplete="name" />
             </label>
             <label>
-              <FieldLabel required>Số điện thoại</FieldLabel>
+              <FieldLabel required>{c.phone}</FieldLabel>
               <input id="co-phone" name="phone" type="tel" required defaultValue={profile?.phone} className="field" autoComplete="tel" />
             </label>
             <label className="md:col-span-2">
-              <FieldLabel required>Địa chỉ cụ thể</FieldLabel>
-              <input id="co-line" name="line" required defaultValue={profile?.line} className="field" placeholder="Số nhà, tên đường" autoComplete="street-address" />
+              <FieldLabel required>{c.line}</FieldLabel>
+              <input id="co-line" name="line" required defaultValue={profile?.line} className="field" placeholder={c.linePh} autoComplete="street-address" />
             </label>
             <label>
-              <FieldLabel required>Phường / Xã</FieldLabel>
+              <FieldLabel required>{c.ward}</FieldLabel>
               <input id="co-ward" name="ward" required defaultValue={profile?.ward} className="field" />
             </label>
             <label>
-              <FieldLabel required>Tỉnh / Thành phố</FieldLabel>
+              <FieldLabel required>{c.province}</FieldLabel>
               <input id="co-province" name="province" required defaultValue={profile?.province} className="field" autoComplete="address-level1" />
             </label>
             <label className="md:col-span-2">
-              <FieldLabel>Ghi chú</FieldLabel>
-              <textarea id="co-note" name="note" maxLength={500} rows={3} className="field h-auto py-2" placeholder="Giờ nhận hàng, khắc tên lót giày…" />
+              <FieldLabel>{c.note}</FieldLabel>
+              <textarea id="co-note" name="note" maxLength={500} rows={3} className="field h-auto py-2" placeholder={c.notePh} />
             </label>
           </div>
         </section>
@@ -135,24 +138,24 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
         <section>
           <label className="flex cursor-pointer items-center gap-3">
             <input id="co-invoice" type="checkbox" checked={wantInvoice} onChange={(e) => setWantInvoice(e.target.checked)} className="size-4 accent-black" />
-            <span className="text-[12px] font-medium tracking-[0.12em] uppercase">Xuất hóa đơn công ty</span>
+            <span className="text-[12px] font-medium tracking-[0.12em] uppercase">{c.invoice}</span>
           </label>
           {wantInvoice && (
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <label className="md:col-span-2">
-                <FieldLabel required>Tên công ty</FieldLabel>
+                <FieldLabel required>{c.company}</FieldLabel>
                 <input id="co-inv-company" name="invCompany" required maxLength={200} className="field" autoComplete="organization" />
               </label>
               <label>
-                <FieldLabel required>Mã số thuế</FieldLabel>
-                <input id="co-inv-tax" name="invTax" required inputMode="numeric" maxLength={14} pattern="\d{10}(-\d{3})?" className="field" placeholder="10 chữ số" />
+                <FieldLabel required>{c.taxCode}</FieldLabel>
+                <input id="co-inv-tax" name="invTax" required inputMode="numeric" maxLength={14} pattern="\d{10}(-\d{3})?" className="field" placeholder={c.taxCodePh} />
               </label>
               <label>
-                <FieldLabel required>Email nhận hóa đơn</FieldLabel>
+                <FieldLabel required>{c.invoiceEmail}</FieldLabel>
                 <input id="co-inv-email" name="invEmail" type="email" required maxLength={120} className="field" />
               </label>
               <label className="md:col-span-2">
-                <FieldLabel required>Địa chỉ công ty</FieldLabel>
+                <FieldLabel required>{c.companyAddress}</FieldLabel>
                 <input id="co-inv-address" name="invAddress" required maxLength={300} className="field" />
               </label>
             </div>
@@ -160,16 +163,16 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
         </section>
 
         <section>
-          <h2 className="border-b border-black pb-2 text-[12px] font-medium tracking-[0.12em] uppercase">Phương thức thanh toán</h2>
+          <h2 className="border-b border-black pb-2 text-[12px] font-medium tracking-[0.12em] uppercase">{c.paymentMethod}</h2>
           <div className="mt-6 grid gap-3">
-            {(Object.keys(methodInfo) as Method[]).map((m) => {
+            {METHODS.map((m) => {
               const disabled = m !== "cod" && quote ? !quote.methods[m] : false;
               return (
                 <label key={m} className={`flex cursor-pointer items-start gap-4 border bg-white p-4 ${method === m ? "border-black" : "border-black/15"} ${disabled ? "cursor-not-allowed opacity-45" : ""}`}>
                   <input type="radio" name="payment" checked={method === m} disabled={disabled} onChange={() => setMethod(m)} className="mt-1 accent-black" />
                   <span>
                     <span className="block text-[13px] font-medium">{methodInfo[m].label}</span>
-                    <span className="mt-1 block text-[12px] text-black/55">{disabled ? "Chưa cấu hình trên môi trường này" : methodInfo[m].desc}</span>
+                    <span className="mt-1 block text-[12px] text-black/55">{disabled ? c.notConfigured : methodInfo[m].desc}</span>
                   </span>
                 </label>
               );
@@ -179,9 +182,9 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
       </div>
 
       <aside className="h-fit border border-black bg-white p-6 lg:sticky lg:top-20">
-        <h2 className="label-caps font-medium">Đơn hàng của bạn</h2>
+        <h2 className="label-caps font-medium">{c.yourOrder}</h2>
         {quoteError && <p className="mt-4 text-[12px] text-danger">{quoteError}</p>}
-        {!quote && !quoteError && <p className="mt-6 text-[12px] text-black/50">Đang kiểm tra giá và tồn kho…</p>}
+        {!quote && !quoteError && <p className="mt-6 text-[12px] text-black/50">{c.checking}</p>}
         {quote && (
           <>
             <ul className="mt-5 space-y-4">
@@ -191,9 +194,9 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
                     <Img src={l.image} alt={l.name} sizes="56px" />
                   </div>
                   <div className="text-[12px]">
-                    <p className="font-medium tracking-[0.04em] uppercase">{l.name}</p>
+                    <p className="font-medium tracking-[0.04em] uppercase">{shown(l.slug, l.color, l.size)?.name ?? l.name}</p>
                     <p className="text-black/55">
-                      {l.color} · Size {l.size} · ×{l.qty}
+                      {t.common.colorSize(shown(l.slug, l.color, l.size)?.colorLabel ?? l.color, l.size)} · ×{l.qty}
                     </p>
                     {l.problem && <p className="text-danger">{l.problem}</p>}
                   </div>
@@ -203,15 +206,15 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
             </ul>
             <dl className="mt-6 space-y-2 border-t border-black/15 pt-4 text-[12px]">
               <div className="flex justify-between">
-                <dt className="text-black/55">Tạm tính</dt>
+                <dt className="text-black/55">{c.subtotal}</dt>
                 <dd>{formatVnd(quote.subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-black/55">Vận chuyển</dt>
-                <dd>{quote.shippingFee ? formatVnd(quote.shippingFee) : "Miễn phí"}</dd>
+                <dt className="text-black/55">{c.shipping}</dt>
+                <dd>{quote.shippingFee ? formatVnd(quote.shippingFee) : t.common.free}</dd>
               </div>
               <div className="flex justify-between border-t border-black pt-3 text-[15px] font-medium">
-                <dt className="uppercase">Tổng cộng</dt>
+                <dt className="uppercase">{c.total}</dt>
                 <dd>{formatVnd(quote.total)}</dd>
               </div>
               {priceNote && <p className="text-right text-[11px] text-black/45">{priceNote}</p>}
@@ -220,9 +223,9 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
         )}
         {hasProblem && (
           <p className="mt-4 text-[12px] text-danger">
-            Một số sản phẩm không đủ hàng.{" "}
+            {c.outOfStock}{" "}
             <Link href="/gio-hang" className="underline">
-              Cập nhật giỏ hàng
+              {c.updateCart}
             </Link>
           </p>
         )}
@@ -235,15 +238,15 @@ export function CheckoutView({ brandName, priceNote }: { brandName: string; pric
         <label className="mt-6 flex cursor-pointer items-start gap-3">
           <input id="co-terms" name="acceptTerms" type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-black" />
           <span className="text-[12px] leading-5 text-black/70">
-            Tôi đã đọc và đồng ý với{" "}
+            {c.termsBefore}
             <Link href="/chinh-sach" target="_blank" className="text-black underline">
-              điều kiện giao dịch chung và chính sách bảo mật
-            </Link>{" "}
-            của {brandName}.
+              {c.terms}
+            </Link>
+            {c.termsAfter(brandName)}
           </span>
         </label>
         <button type="submit" disabled={pending || !quote || hasProblem} className="btn-dark mt-5 w-full disabled:opacity-50">
-          {pending ? "Đang xử lý…" : method === "cod" ? "Đặt hàng" : `Thanh toán qua ${methodInfo[method].label}`}
+          {pending ? t.common.processing : method === "cod" ? c.placeOrder : c.payWith(methodInfo[method].label)}
         </button>
       </aside>
     </form>

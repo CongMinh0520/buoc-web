@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
 import { Img } from "@/components/ui/Img";
 import type { Line } from "@/lib/types";
 

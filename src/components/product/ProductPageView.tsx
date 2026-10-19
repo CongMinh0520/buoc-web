@@ -1,10 +1,11 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { getT } from "@/i18n/server";
 import type { Product, SiteSettings } from "@/lib/types";
 import { Img } from "@/components/ui/Img";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { BuyBox } from "./BuyBox";
 
-export function ProductPageView({
+export async function ProductPageView({
   product,
   related,
   priceNote,
@@ -15,6 +16,7 @@ export function ProductPageView({
   priceNote?: string;
   story?: SiteSettings["productStory"];
 }) {
+  const t = await getT();
 
   return (
     <>
@@ -23,7 +25,7 @@ export function ProductPageView({
         <div className="grid grid-cols-2 bg-stone">
           {product.images.slice(0, 4).map((src, i) => (
             <div key={i} className="relative aspect-[409/520] border-r border-b border-white">
-              <Img src={src} alt={`${product.name} — ảnh ${i + 1}`} sizes="(min-width:1024px) 32vw, 50vw" priority={i < 2} />
+              <Img src={src} alt={t.product.image(product.name, i + 1)} sizes="(min-width:1024px) 32vw, 50vw" priority={i < 2} />
             </div>
           ))}
         </div>
@@ -31,13 +33,13 @@ export function ProductPageView({
         {/* Thông tin & mua hàng */}
         <div className="bg-white">
           <div className="px-5 pt-8 pb-10 sm:px-[38px] lg:sticky lg:top-14">
-            <nav aria-label="Đường dẫn trang" className="text-[9px] tracking-[0.1em] text-[#6d6d6b] uppercase">
+            <nav aria-label={t.common.breadcrumb} className="text-[9px] tracking-[0.1em] text-[#6d6d6b] uppercase">
               <Link href="/" className="hover:text-black">
-                Trang chủ
+                {t.common.home}
               </Link>{" "}
               /{" "}
               <Link href={product.gender === "nu" ? "/danh-muc/nu" : "/danh-muc/nam"} className="hover:text-black">
-                {product.gender === "nu" ? "Nữ" : "Nam"}
+                {product.gender === "nu" ? t.common.genders.nu : t.common.genders.nam}
               </Link>{" "}
               / {product.name}
             </nav>
@@ -65,11 +67,11 @@ export function ProductPageView({
 
       {/* Có thể bạn cũng thích */}
       <section className="bg-white px-4 pt-16 pb-20 sm:px-6">
-        <h2 className="text-center font-display text-[24px] font-medium tracking-[0.08em] sm:text-[30px] text-[#101010]">CÓ THỂ BẠN CŨNG THÍCH</h2>
+        <h2 className="text-center font-display text-[24px] font-medium tracking-[0.08em] sm:text-[30px] text-[#101010]">{t.product.related}</h2>
         <ul className="mx-auto mt-10 grid max-w-site grid-cols-2 gap-x-2.5 gap-y-8 lg:grid-cols-4">
           {related.map((p) => (
             <li key={p.slug}>
-              <ProductCard product={p} variant="related" />
+              <ProductCard product={p} variant="related" newLabel={t.common.newBadge} />
             </li>
           ))}
         </ul>

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Img } from "@/components/ui/Img";
+import { useT } from "@/components/providers/LocaleProvider";
 
 /** Trình chiếu ảnh tự chuyển (thay cho khối video trong design) */
 export function MediaCarousel({ slides }: { slides: { src: string; caption: string }[] }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     if (paused || slides.length < 2) return;
@@ -35,7 +37,7 @@ export function MediaCarousel({ slides }: { slides: { src: string; caption: stri
           <button
             key={idx}
             onClick={() => setI(idx)}
-            aria-label={`Ảnh ${idx + 1}: ${s.caption}`}
+            aria-label={t.line.slide(idx + 1, s.caption)}
             aria-current={idx === i}
             className={`h-1.5 w-10 transition-colors ${idx === i ? "bg-black" : "bg-black/20 hover:bg-black/40"}`}
           />

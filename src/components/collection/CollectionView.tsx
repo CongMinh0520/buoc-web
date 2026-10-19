@@ -1,9 +1,11 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { getT } from "@/i18n/server";
 import { Img } from "@/components/ui/Img";
 import type { Line, Lookbook, Product } from "@/lib/types";
 import { PagedGrid } from "./PagedGrid";
 
-export function CollectionView({ collection, products, lines }: { collection: Lookbook; products: Product[]; lines: Line[] }) {
+export async function CollectionView({ collection, products, lines }: { collection: Lookbook; products: Product[]; lines: Line[] }) {
+  const t = await getT();
   // Gom sản phẩm theo dòng, dòng của bộ sưu tập đứng đầu
   const order = [collection.line.key, ...lines.map((l) => l.key).filter((k) => k !== collection.line.key)];
   const labelOf = (k: string) => lines.find((l) => l.key === k)?.label ?? k;
@@ -17,9 +19,9 @@ export function CollectionView({ collection, products, lines }: { collection: Lo
       </section>
 
       <div className="mx-auto max-w-site px-4 pt-14 sm:px-5 lg:pt-16">
-        <nav aria-label="Đường dẫn trang" className="flex flex-wrap items-center gap-2 text-[11px] tracking-[0.14em] uppercase">
+        <nav aria-label={t.common.breadcrumb} className="flex flex-wrap items-center gap-2 text-[11px] tracking-[0.14em] uppercase">
           <Link href="/" className="text-black/70 hover:text-black">
-            Trang chủ
+            {t.common.home}
           </Link>
           <span className="text-black/40">/</span>
           <Link href={`/dong/${collection.line.key}`} className="text-black/70 hover:text-black">

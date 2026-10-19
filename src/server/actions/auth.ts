@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { fail } from "@/server/i18n";
 import config from "@payload-config";
 import { login, logout } from "@payloadcms/next/auth";
 import { getPayloadClient } from "@/lib/cms";
@@ -45,7 +46,7 @@ export async function registerAction(input: {
   acceptPrivacy: boolean;
   marketingOptIn: boolean;
 }): Promise<ActionResult<{ email: string }>> {
-  if (!(await rateLimit("register", 5, 3600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("register", 5, 3600))) return fail(TOO_MANY);
   const parsed = z
     .object({
       name: z.string().trim().min(2, "Vui lòng nhập họ tên").max(100),
@@ -58,12 +59,12 @@ export async function registerAction(input: {
     })
     .refine((d) => d.password === d.confirm, { message: "Mật khẩu xác nhận không khớp" })
     .safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
 
   const { payload, customer } = await findCustomerByEmail(parsed.data.email);
   if (customer?.emailVerified) {
     // Không tiết lộ email đã tồn tại; hướng dẫn chung
-    return { ok: false, error: "Không thể đăng ký với email này. Nếu bạn đã có tài khoản, hãy đăng nhập hoặc dùng Quên mật khẩu." };
+    return fail("Không thể đăng ký với email này. Nếu bạn đã có tài khoản, hãy đăng nhập hoặc dùng Quên mật khẩu.");
   }
   const now = new Date().toISOString();
   const consentData = {
@@ -86,47 +87,47 @@ export async function registerAction(input: {
     });
   }
   const sent = await issueOtp(payload, doc.id, parsed.data.email, "verify");
-  if (!sent.ok && sent.reason === "send") return { ok: false, error: SEND_FAILED };
+  if (!sent.ok && sent.reason === "send") return fail(SEND_FAILED);
   return { ok: true, data: { email: parsed.data.email } };
 }
 
 export async function verifyEmailAction(input: { email: string; code: string }): Promise<ActionResult> {
-  if (!(await rateLimit("otp-verify", 10, 600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("otp-verify", 10, 600))) return fail(TOO_MANY);
   const parsed = z.object({ email, code: otp }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const { payload, customer } = await findCustomerByEmail(parsed.data.email);
   if (!customer || !(await checkOtp(payload, customer.id, "verify", parsed.data.code))) {
-    return { ok: false, error: "Mã OTP không đúng hoặc đã hết hạn." };
+    return fail("Mã OTP không đúng hoặc đã hết hạn.");
   }
   await payload.update({ collection: "customers", id: customer.id, overrideAccess: true, data: { emailVerified: true } });
   return { ok: true };
 }
 
 export async function resendOtpAction(input: { email: string; purpose: "verify" | "reset" }): Promise<ActionResult> {
-  if (!(await rateLimit("otp-send", 5, 3600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("otp-send", 5, 3600))) return fail(TOO_MANY);
   const parsed = z.object({ email, purpose: z.enum(["verify", "reset"]) }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const { payload, customer } = await findCustomerByEmail(parsed.data.email);
   if (customer) {
     const r = await issueOtp(payload, customer.id, parsed.data.email, parsed.data.purpose);
-    if (!r.ok) return { ok: false, error: r.reason === "send" ? SEND_FAILED : "Vui lòng đợi 60 giây trước khi gửi lại mã." };
+    if (!r.ok) return fail(r.reason === "send" ? SEND_FAILED : "Vui lòng đợi 60 giây trước khi gửi lại mã.");
   }
   return { ok: true };
 }
 
 export async function loginAction(input: { email: string; password: string }): Promise<ActionResult<PublicCustomer>> {
-  if (!(await rateLimit("login", 10, 600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("login", 10, 600))) return fail(TOO_MANY);
   const parsed = z.object({ email, password: z.string().min(1).max(72) }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Email hoặc mật khẩu không đúng." };
+  if (!parsed.success) return fail("Email hoặc mật khẩu không đúng.");
   try {
     const res = await login({ collection: "customers", config, email: parsed.data.email, password: parsed.data.password });
     const u = res.user as unknown as { id: number; name: string; email: string };
     return { ok: true, data: { id: u.id, name: u.name, email: u.email } };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
-    if (msg.includes("xác minh")) return { ok: false, error: msg };
-    if (/locked/i.test(msg)) return { ok: false, error: "Tài khoản tạm khóa do đăng nhập sai nhiều lần. Thử lại sau 10 phút." };
-    return { ok: false, error: "Email hoặc mật khẩu không đúng." };
+    if (msg.includes("xác minh")) return fail(msg);
+    if (/locked/i.test(msg)) return fail("Tài khoản tạm khóa do đăng nhập sai nhiều lần. Thử lại sau 10 phút.");
+    return fail("Email hoặc mật khẩu không đúng.");
   }
 }
 
@@ -136,9 +137,9 @@ export async function logoutAction(): Promise<ActionResult> {
 }
 
 export async function forgotPasswordAction(input: { email: string }): Promise<ActionResult<{ email: string }>> {
-  if (!(await rateLimit("forgot", 5, 3600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("forgot", 5, 3600))) return fail(TOO_MANY);
   const parsed = z.object({ email }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const { payload, customer } = await findCustomerByEmail(parsed.data.email);
   // Luôn trả về thành công để không lộ email nào đã đăng ký (lỗi gửi mail chỉ ghi log cho quản trị)
   if (customer) await issueOtp(payload, customer.id, parsed.data.email, "reset");
@@ -146,26 +147,26 @@ export async function forgotPasswordAction(input: { email: string }): Promise<Ac
 }
 
 export async function verifyResetOtpAction(input: { email: string; code: string }): Promise<ActionResult<{ ticket: string }>> {
-  if (!(await rateLimit("otp-verify", 10, 600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("otp-verify", 10, 600))) return fail(TOO_MANY);
   const parsed = z.object({ email, code: otp }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const { payload, customer } = await findCustomerByEmail(parsed.data.email);
   if (!customer || !(await checkOtp(payload, customer.id, "reset", parsed.data.code))) {
-    return { ok: false, error: "Mã OTP không đúng hoặc đã hết hạn." };
+    return fail("Mã OTP không đúng hoặc đã hết hạn.");
   }
   return { ok: true, data: { ticket: await issueResetTicket(payload, customer.id) } };
 }
 
 export async function resetPasswordAction(input: { email: string; ticket: string; password: string; confirm: string }): Promise<ActionResult> {
-  if (!(await rateLimit("reset", 10, 3600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("reset", 10, 3600))) return fail(TOO_MANY);
   const parsed = z
     .object({ email, ticket: z.string().min(20).max(64), password, confirm: z.string() })
     .refine((d) => d.password === d.confirm, { message: "Mật khẩu xác nhận không khớp" })
     .safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (!parsed.success) return fail(firstError(parsed.error));
   const { payload, customer } = await findCustomerByEmail(parsed.data.email);
   if (!customer || !(await checkOtp(payload, customer.id, "reset-ticket", parsed.data.ticket))) {
-    return { ok: false, error: "Phiên đặt lại mật khẩu đã hết hạn. Vui lòng làm lại." };
+    return fail("Phiên đặt lại mật khẩu đã hết hạn. Vui lòng làm lại.");
   }
   // Đổi mật khẩu; đồng thời mở khóa nếu tài khoản đang bị khóa do nhập sai
   await payload.update({
