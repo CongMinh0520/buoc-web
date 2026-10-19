@@ -1,0 +1,4 @@
+# Không upload biến môi trường ở máy — Vercel dùng biến khai báo trên project
+.env
+.env.*
+!.env.example
