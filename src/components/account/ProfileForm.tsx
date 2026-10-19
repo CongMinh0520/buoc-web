@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { FieldLabel, SectionTitle } from "./AccountShell";
+import { useT } from "@/components/providers/LocaleProvider";
 import {
   changePasswordAction,
   updateProfileAction,
@@ -35,6 +36,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     null,
   );
   const [pending, start] = useTransition();
+  const t = useT();
+  const p = t.account.profile;
 
   return (
     <div className="max-w-[960px]">
@@ -53,16 +56,16 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             });
             setMsg(
               r.ok
-                ? { ok: true, text: "Đã lưu thông tin." }
+                ? { ok: true, text: p.saved }
                 : { ok: false, text: r.error },
             );
           });
         }}
       >
-        <SectionTitle>Thông tin cơ bản</SectionTitle>
+        <SectionTitle>{p.basics}</SectionTitle>
         <div className="mt-8 grid gap-6">
           <label>
-            <FieldLabel required>Họ và tên</FieldLabel>
+            <FieldLabel required>{p.name}</FieldLabel>
             <input
               id="pf-name"
               name="name"
@@ -75,7 +78,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           </label>
           <div className="grid gap-6 md:grid-cols-2">
             <label>
-              <FieldLabel>Ngày sinh</FieldLabel>
+              <FieldLabel>{p.birthday}</FieldLabel>
               <input
                 id="pf-birthday"
                 name="birthday"
@@ -85,22 +88,24 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               />
             </label>
             <label>
-              <FieldLabel>Giới tính</FieldLabel>
+              <FieldLabel>{p.gender}</FieldLabel>
               <select
                 id="pf-gender"
                 name="gender"
                 className="field"
                 defaultValue={profile.gender || "Khác"}
               >
-                <option>Nữ</option>
-                <option>Nam</option>
-                <option>Khác</option>
+                {["Nữ", "Nam", "Khác"].map((g) => (
+                  <option key={g} value={g}>
+                    {p.genderOptions[g]}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             <label>
-              <FieldLabel>Email (dùng để đăng nhập)</FieldLabel>
+              <FieldLabel>{p.email}</FieldLabel>
               <input
                 id="pf-email"
                 type="email"
@@ -111,7 +116,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               />
             </label>
             <label>
-              <FieldLabel>Số điện thoại</FieldLabel>
+              <FieldLabel>{p.phone}</FieldLabel>
               <input
                 id="pf-phone"
                 name="phone"
@@ -124,14 +129,14 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             </label>
           </div>
           <label>
-            <FieldLabel>Size giày thường mang</FieldLabel>
+            <FieldLabel>{p.shoeSize}</FieldLabel>
             <select
               id="pf-size"
               name="shoeSize"
               className="field md:max-w-[468px]"
               defaultValue={profile.shoeSize}
             >
-              <option value="">Chưa chọn</option>
+              <option value="">{p.notSelected}</option>
               {["35", "36", "37", "38", "39", "40", "41", "42", "43", "44"].map(
                 (s) => (
                   <option key={s}>{s}</option>
@@ -141,7 +146,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           </label>
         </div>
         <div className="mt-10">
-          <SectionTitle>Các thông tin khác</SectionTitle>
+          <SectionTitle>{p.other}</SectionTitle>
           <label className="mt-8 flex cursor-pointer items-start gap-3">
             <input
               id="pf-marketing"
@@ -151,7 +156,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               className="mt-0.5 size-4 accent-black"
             />
             <span className="text-[12px] tracking-[0.06em] text-black/70 uppercase">
-              Nhận thông báo về bộ sưu tập mới và chương trình ưu đãi
+              {p.marketing}
             </span>
           </label>
         </div>
@@ -162,7 +167,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             disabled={pending}
             className="btn-dark disabled:opacity-60"
           >
-            Lưu thông tin
+            {p.save}
           </button>
         </div>
       </form>
@@ -181,17 +186,17 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             });
             setPwMsg(
               r.ok
-                ? { ok: true, text: "Đã đổi mật khẩu." }
+                ? { ok: true, text: p.passwordChanged }
                 : { ok: false, text: r.error },
             );
             if (r.ok) form.reset();
           });
         }}
       >
-        <SectionTitle>Bảo mật</SectionTitle>
+        <SectionTitle>{p.security}</SectionTitle>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <label>
-            <FieldLabel>Mật khẩu hiện tại</FieldLabel>
+            <FieldLabel>{p.currentPassword}</FieldLabel>
             <input
               id="pw-current"
               name="current"
@@ -202,7 +207,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             />
           </label>
           <label>
-            <FieldLabel>Mật khẩu mới</FieldLabel>
+            <FieldLabel>{p.newPassword}</FieldLabel>
             <input
               id="pw-next"
               name="next"
@@ -214,7 +219,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             />
           </label>
           <label>
-            <FieldLabel>Xác nhận mật khẩu</FieldLabel>
+            <FieldLabel>{p.confirmPassword}</FieldLabel>
             <input
               id="pw-confirm"
               name="confirm"
@@ -232,7 +237,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             disabled={pending}
             className="btn-outline disabled:opacity-60"
           >
-            Đổi mật khẩu
+            {p.changePassword}
           </button>
         </div>
       </form>

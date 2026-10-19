@@ -25,10 +25,36 @@ import {
 } from "./data/content";
 import { img } from "./data/images";
 import { block, h, list, p, root } from "./lexical";
+import {
+  aboutEn,
+  articlesEn,
+  collectionsEn,
+  colorEn,
+  footerRegionEn,
+  goodyearBodyEn,
+  homeEn,
+  linesEn,
+  milestonesEn,
+  navEn,
+  placeholderBodyEn,
+  policiesEn,
+  productsEn,
+  promotionsEn,
+  sharedEn,
+  siteEn,
+  storeRegionEn,
+  workshopEn,
+  type BodyBlock,
+} from "./data/en";
 
 const payload = await getPayload({ config });
 const ctx = { disableRevalidate: true };
 const ext = (url: string) => ({ media: null, url });
+/** Ghi bản tiếng Anh (locale "en") cho tài liệu vừa tạo bằng tiếng Việt */
+const EN = { locale: "en" as const, context: ctx, overrideAccess: true };
+/** Mảng có trường dịch: giữ id từng dòng để bản tiếng Anh gắn đúng vào dòng đã tạo (không tạo dòng mới) */
+const withIds = <T extends { id?: string | null }, U>(rows: T[] | null | undefined, map: (row: T, i: number) => U) =>
+  (rows ?? []).map((row, i) => ({ ...row, ...map(row, i), id: row.id }));
 
 if (
   process.env.NODE_ENV === "production" &&
@@ -153,6 +179,19 @@ for (const key of Object.keys(lineData) as LineKey[]) {
     },
   });
   lineIds[key] = doc.id as number;
+  const en = linesEn[key];
+  await payload.update({
+    collection: "lines",
+    id: doc.id,
+    ...EN,
+    data: {
+      label: l.label,
+      overline: en.overline,
+      intro: en.intro,
+      tagline: en.tagline,
+      slides: withIds(doc.slides, (_, i) => ({ caption: en.slides[i] })),
+    },
+  });
 }
 
 // ——— Sản phẩm ———
@@ -191,6 +230,24 @@ for (const [i, pr] of productData.entries()) {
     },
   });
   productIds[pr.slug] = doc.id as number;
+  const en = productsEn[pr.slug];
+  if (en) {
+    await payload.update({
+      collection: "products",
+      id: doc.id,
+      ...EN,
+      data: {
+        name: pr.name,
+        subtitle: en.subtitle,
+        description: en.description,
+        details: en.details ?? sharedEn[pr.details] ?? pr.details,
+        sizing: sharedEn[pr.sizing] ?? pr.sizing,
+        colors: withIds(doc.colors, (c) => ({ label: colorEn[c.name] ?? c.name })),
+        _status: "published",
+        meta: { title: pr.name, description: `${en.subtitle}. ${en.description}`.slice(0, 160) },
+      },
+    });
+  }
 }
 
 // ——— Bộ sưu tập ———
@@ -214,6 +271,13 @@ for (const c of collections) {
     },
   });
   lookbookIds[c.slug] = doc.id as number;
+  const enDesc = collectionsEn[c.slug] ?? c.desc;
+  await payload.update({
+    collection: "lookbooks",
+    id: doc.id,
+    ...EN,
+    data: { title: c.title, desc: enDesc, _status: "published", meta: { title: `${c.title} collection`, description: enDesc.slice(0, 160) } },
+  });
 }
 
 // ——— Tạp chí ———
@@ -221,9 +285,8 @@ const toDate = (d: string) => {
   const [dd, mm, yyyy] = d.split("/");
   return new Date(`${yyyy}-${mm}-${dd}T08:00:00+07:00`).toISOString();
 };
-for (const a of articles) {
-  const children = a.body
-    ? a.body.map((b) => {
+const bodyChildren = (body: readonly BodyBlock[]) =>
+  body.map((b) => {
         switch (b.type) {
           case "h2":
             return h(b.text);
@@ -247,14 +310,17 @@ for (const a of articles) {
               caption: b.caption ?? "",
             });
         }
-      })
+      });
+for (const a of articles) {
+  const children = a.body
+    ? bodyChildren(a.body as BodyBlock[])
     : [
         p(a.excerpt),
         p(
           "Nội dung chi tiết của bài viết đang được đội ngũ biên tập hoàn thiện. Trong lúc chờ, bạn có thể ghé cửa hàng gần nhất hoặc đặt lịch xưởng mở để trò chuyện trực tiếp với nghệ nhân.",
         ),
       ];
-  await payload.create({
+  const created = await payload.create({
     collection: "articles",
     context: ctx,
     data: {
@@ -269,6 +335,28 @@ for (const a of articles) {
       meta: { title: `${a.title} | Tạp chí BƯỚC`, description: a.excerpt },
     },
   });
+  const en = articlesEn[a.slug];
+  if (en) {
+    // Ảnh trong bản tiếng Anh lấy lại đúng các ảnh của bản tiếng Việt (theo thứ tự)
+    const viImages = (a.body ?? []).filter((b) => b.type === "images").map((b) => (b as { srcs: string[] }).srcs);
+    let imgIdx = 0;
+    const enBody =
+      a.slug === "de-khau-goodyear"
+        ? goodyearBodyEn.map((b) => (b.type === "images" ? { ...b, srcs: viImages[imgIdx++] ?? [] } : b))
+        : null;
+    await payload.update({
+      collection: "articles",
+      id: created.id,
+      ...EN,
+      data: {
+        title: en.title,
+        excerpt: en.excerpt,
+        content: root(enBody ? bodyChildren(enBody) : [p(en.excerpt), p(placeholderBodyEn)]) as never,
+        _status: "published",
+        meta: { title: `${en.title} | BƯỚC Journal`, description: en.excerpt },
+      },
+    });
+  }
 }
 
 // ——— Ưu đãi ———
@@ -279,7 +367,7 @@ const promoDates: Record<string, [string, string]> = {
 };
 for (const pr of promotions) {
   const [s, e] = promoDates[pr.slug];
-  await payload.create({
+  const promo = await payload.create({
     collection: "promotions",
     context: ctx,
     data: {
@@ -293,16 +381,16 @@ for (const pr of promotions) {
       _status: "published",
     },
   });
+  const en = promotionsEn[pr.slug];
+  if (en) await payload.update({ collection: "promotions", id: promo.id, ...EN, data: { ...en, _status: "published" } });
 }
 
 // ——— Chính sách ———
+const policyChildren = (blocks: { heading: string; paragraphs?: string[]; items?: string[] }[]) =>
+  blocks.flatMap((b) => [h(b.heading, "h3"), ...(b.paragraphs ?? []).map((t) => p(t)), ...(b.items ? [list(b.items)] : [])]);
 for (const [i, pol] of policies.entries()) {
-  const children = pol.blocks.flatMap((b) => [
-    h(b.heading, "h3"),
-    ...(b.paragraphs ?? []).map((t) => p(t)),
-    ...(b.items ? [list(b.items)] : []),
-  ]);
-  await payload.create({
+  const children = policyChildren(pol.blocks);
+  const doc = await payload.create({
     collection: "policies",
     context: ctx,
     data: {
@@ -315,6 +403,8 @@ for (const [i, pol] of policies.entries()) {
       _status: "published",
     },
   });
+  const en = policiesEn[pol.id];
+  if (en) await payload.update({ collection: "policies", id: doc.id, ...EN, data: { title: en.title, content: root(policyChildren(en.blocks)) as never, _status: "published" } });
 }
 
 // ——— Cửa hàng ———
@@ -325,7 +415,7 @@ const footerRegion: Record<string, string> = {
   "Cần Thơ": "Miền Tây",
 };
 for (const [i, s] of storeList.entries()) {
-  await payload.create({
+  const store = await payload.create({
     collection: "stores",
     context: ctx,
     data: {
@@ -339,10 +429,17 @@ for (const [i, s] of storeList.entries()) {
       image: ext(s.image),
     },
   });
+  const region = footerRegion[s.region] ?? s.region;
+  await payload.update({
+    collection: "stores",
+    id: store.id,
+    ...EN,
+    data: { region: storeRegionEn[s.region] ?? s.region, footerRegion: footerRegionEn[region] ?? region, hours: s.hours },
+  });
 }
 
 // ——— Globals ———
-await payload.updateGlobal({
+const site = await payload.updateGlobal({
   slug: "site-settings",
   context: ctx,
   data: {
@@ -375,6 +472,25 @@ await payload.updateGlobal({
     ogImage: ext(img.hero),
   },
 });
+{
+  const en = siteEn(brand.name);
+  await payload.updateGlobal({
+    slug: "site-settings",
+    ...EN,
+    data: {
+      brandName: brand.name,
+      wordmark: brand.wordmark,
+      tagline: en.tagline,
+      copyright: en.copyright,
+      priceNote: en.priceNote,
+      productStory: { ...en.productStory, ctaHref: "/gioi-thieu" },
+      mainNav: withIds(site.mainNav, (n) => ({ label: navEn[n.label] ?? n.label })),
+      footerInfo: withIds(site.footerInfo, (n) => ({ label: navEn[n.label] ?? n.label })),
+      seoTitle: en.seoTitle,
+      seoDescription: en.seoDescription,
+    },
+  });
+}
 
 await payload.updateGlobal({
   slug: "home",
@@ -440,8 +556,19 @@ await payload.updateGlobal({
     },
   },
 });
-
 await payload.updateGlobal({
+  slug: "home",
+  ...EN,
+  data: {
+    hero: { ...homeEn.hero, ctaHref: "/bo-suu-tap/sen-ha-26", image: ext(img.hero) },
+    storeBanner: { ...homeEn.storeBanner, ctaHref: "/xuong-mo#dat-lich", image: ext(img.storeAtmosphere) },
+    quote: { ...homeEn.quote, image: ext(img.craftQuote) },
+    closing: { ...homeEn.closing, line: lineIds.cham, image: ext(img.cham) },
+    journal: homeEn.journal,
+  },
+});
+
+const about = await payload.updateGlobal({
   slug: "about",
   context: ctx,
   data: {
@@ -475,8 +602,17 @@ await payload.updateGlobal({
     ],
   },
 });
-
 await payload.updateGlobal({
+  slug: "about",
+  ...EN,
+  data: {
+    ...aboutEn,
+    milestones: withIds(about.milestones, (m) => milestonesEn[m.year] ?? { title: m.title, text: m.text ?? "" }),
+    facts: withIds(about.facts, (_, i) => aboutEn.facts[i] ?? {}),
+  },
+});
+
+const workshop = await payload.updateGlobal({
   slug: "workshop",
   context: ctx,
   data: {
@@ -526,6 +662,18 @@ await payload.updateGlobal({
     ],
   },
 });
+{
+  const { galleryAlt, sessions, ...rest } = workshopEn;
+  await payload.updateGlobal({
+    slug: "workshop",
+    ...EN,
+    data: {
+      ...rest,
+      gallery: withIds(workshop.gallery, (_, i) => ({ alt: galleryAlt[i] ?? "" })),
+      sessions: withIds(workshop.sessions, (_, i) => sessions[i] ?? {}),
+    },
+  });
+}
 
 if (!isProd) {
   // ——— Khách hàng mẫu + đơn hàng ———
@@ -661,7 +809,7 @@ if (!isProd) {
       readAt: new Date().toISOString(),
     },
     {
-      title: "Bộ sưu tập mới — Sen Hạ '26",
+      title: "Bộ sưu tập mới — Sen Hạ ’26",
       body: "Mười hai thiết kế nhuộm tay bằng màu thực vật đã có mặt.",
       ctaLabel: "Xem bộ sưu tập",
       ctaHref: "/bo-suu-tap/sen-ha-26",

@@ -7,8 +7,13 @@ import { dictionaries } from "./dictionaries";
  * Gọi được trong Server Component và hàm "use cache" — lang trở thành một phần của khóa cache.
  */
 export async function getLocale(): Promise<Locale> {
-  const l = await lang().catch(() => defaultLocale);
-  return isLocale(l) ? l : defaultLocale;
+  try {
+    const l = await lang();
+    return isLocale(l) ? l : defaultLocale;
+  } catch {
+    // Ngoài cây app/(site)/[lang] (sitemap, route handler…) không có root param → dùng tiếng Việt
+    return defaultLocale;
+  }
 }
 
 /** Từ điển giao diện theo ngôn ngữ hiện tại */

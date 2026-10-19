@@ -4,12 +4,15 @@ import { useMemo, useState } from "react";
 import { MapPin, Phone, Clock, Search } from "lucide-react";
 import type { Store } from "@/lib/types";
 import { Img } from "@/components/ui/Img";
+import { useT } from "@/components/providers/LocaleProvider";
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d");
 
-const ALL = "Tất cả khu vực";
+// Giá trị đặc biệt của bộ lọc khu vực (nhãn hiển thị lấy từ từ điển)
+const ALL = "__all__";
 
 export function StoreFinder({ stores: storeList }: { stores: Store[] }) {
+  const t = useT();
   const regions = [ALL, ...Array.from(new Set(storeList.map((s) => s.region)))];
   const [q, setQ] = useState("");
   const [region, setRegion] = useState(regions[0]);
@@ -30,21 +33,23 @@ export function StoreFinder({ stores: storeList }: { stores: Store[] }) {
       <div className="flex flex-col bg-white p-5">
         <div className="grid gap-3 sm:grid-cols-[1fr_160px]">
           <label className="relative">
-            <span className="sr-only">Tìm cửa hàng</span>
+            <span className="sr-only">{t.stores.search}</span>
             <Search size={15} strokeWidth={1.5} className="absolute top-1/2 left-3 -translate-y-1/2 text-black/40" />
-            <input id="store-search" value={q} onChange={(e) => setQ(e.target.value)} className="field pl-9" placeholder="Tìm theo tên hoặc địa chỉ…" />
+            <input id="store-search" value={q} onChange={(e) => setQ(e.target.value)} className="field pl-9" placeholder={t.stores.searchPh} />
           </label>
           <label>
-            <span className="sr-only">Khu vực</span>
+            <span className="sr-only">{t.stores.region}</span>
             <select id="store-region" value={region} onChange={(e) => setRegion(e.target.value)} className="field">
               {regions.map((r) => (
-                <option key={r}>{r}</option>
+                <option key={r} value={r}>
+                  {r === ALL ? t.stores.all : r}
+                </option>
               ))}
             </select>
           </label>
         </div>
         <ul className="mt-4 flex-1 divide-y divide-black/10 overflow-y-auto lg:max-h-[520px]">
-          {list.length === 0 && <li className="py-10 text-center text-[13px] text-black/50">Không tìm thấy cửa hàng phù hợp.</li>}
+          {list.length === 0 && <li className="py-10 text-center text-[13px] text-black/50">{t.stores.none}</li>}
           {list.map((s) => (
             <li key={s.name}>
               <button
@@ -76,7 +81,7 @@ export function StoreFinder({ stores: storeList }: { stores: Store[] }) {
               <Phone size={16} strokeWidth={1.4} className="mt-0.5 shrink-0" /> {current.phone}
             </li>
             <li className="flex gap-2.5">
-              <Clock size={16} strokeWidth={1.4} className="mt-0.5 shrink-0" /> Mở cửa {current.hours} hằng ngày
+              <Clock size={16} strokeWidth={1.4} className="mt-0.5 shrink-0" /> {t.stores.hours(current.hours)}
             </li>
           </ul>
           <a
@@ -85,7 +90,7 @@ export function StoreFinder({ stores: storeList }: { stores: Store[] }) {
             rel="noreferrer"
             className="btn-dark mt-6"
           >
-            Chỉ đường
+            {t.stores.directions}
           </a>
         </div>
       </article>

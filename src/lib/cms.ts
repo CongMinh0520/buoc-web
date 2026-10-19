@@ -4,6 +4,9 @@
  * Mọi hàm đều có 'use cache' + cacheTag: kết quả được prerender vào HTML tĩnh lúc build
  * và chỉ được tạo lại khi nội dung tương ứng thay đổi trong admin (xem payload/hooks/revalidate.ts).
  * Truy vấn dùng overrideAccess: false để áp đúng quyền công khai (chỉ thấy bản đã xuất bản).
+ *
+ * Ngôn ngữ: mặc định lấy từ segment [lang] của request (root param — tự thành một phần khóa cache);
+ * nơi nằm ngoài cây [lang] (sitemap, route handler) truyền `locale` vào. Bản en còn trống → hiện bản vi.
  */
 import { FALLBACK_BRAND_NAME } from "./brand";
 import { cacheLife, cacheTag } from "next/cache";
@@ -25,6 +28,8 @@ import type {
   Store,
 } from "./types";
 import { formatDate, formatPeriod } from "./format";
+import { defaultLocale, type Locale } from "@/i18n/config";
+import { getLocale } from "@/i18n/server";
 
 export const getPayloadClient = () => getPayload({ config });
 
@@ -45,12 +50,13 @@ const lineRef = (l: unknown): LineRef =>
 const published = { _status: { equals: "published" } } as const;
 
 /* ───────── Cài đặt chung ───────── */
-export async function getSiteSettings(): Promise<SiteSettings> {
+export async function getSiteSettings(locale?: Locale): Promise<SiteSettings> {
   "use cache";
   cacheTag("site");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const s = await payload.findGlobal({ slug: "site-settings", depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const s = await payload.findGlobal({ slug: "site-settings", depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   const links = (arr?: { label: string; href: string }[] | null): NavLink[] => (arr ?? []).map(({ label, href }) => ({ label, href }));
   const c = s.company ?? {};
   const brandName = s.brandName || FALLBACK_BRAND_NAME;
@@ -92,12 +98,13 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 }
 
 /* ───────── Dòng sản phẩm ───────── */
-export async function getLines(): Promise<Line[]> {
+export async function getLines(locale?: Locale): Promise<Line[]> {
   "use cache";
   cacheTag("catalog");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "lines", sort: "order", limit: 50, depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "lines", sort: "order", limit: 50, depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((l) => ({
     key: l.key,
     label: l.label,
@@ -130,7 +137,7 @@ function mapProduct(p: RawProduct & Record<string, unknown>): Product {
     gender: doc.gender,
     price: doc.price,
     isNew: Boolean(doc.isNew),
-    colors: (doc.colors ?? []).map(({ name, hex }) => ({ name, hex })),
+    colors: (doc.colors ?? []).map(({ name, hex, label }) => ({ name, hex, label: label || name })),
     sizes,
     stock,
     images: (doc.images ?? []).map((i) => imageUrl(i.image, "card")).filter((x): x is string => Boolean(x)),
@@ -141,21 +148,22 @@ function mapProduct(p: RawProduct & Record<string, unknown>): Product {
   };
 }
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(locale?: Locale): Promise<Product[]> {
   "use cache";
   cacheTag("catalog");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "products", where: published, limit: 500, depth: 1, sort: "-isNew", overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "products", where: published, limit: 500, depth: 1, sort: "-isNew", overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((d) => mapProduct(d as never));
 }
 
-export async function getProduct(slug: string): Promise<Product | null> {
-  return (await getProducts()).find((p) => p.slug === slug) ?? null;
+export async function getProduct(slug: string, locale?: Locale): Promise<Product | null> {
+  return (await getProducts(locale)).find((p) => p.slug === slug) ?? null;
 }
 
-export async function getSearchIndex(): Promise<SearchItem[]> {
-  return (await getProducts()).map((p) => ({
+export async function getSearchIndex(locale?: Locale): Promise<SearchItem[]> {
+  return (await getProducts(locale)).map((p) => ({
     slug: p.slug,
     name: p.name,
     subtitle: p.subtitle,
@@ -163,17 +171,18 @@ export async function getSearchIndex(): Promise<SearchItem[]> {
     isNew: p.isNew,
     image: p.images[0] ?? null,
     lineLabel: p.line.label,
-    colors: p.colors.map((c) => c.name),
+    colors: p.colors.map((c) => c.label),
   }));
 }
 
 /* ───────── Bộ sưu tập ───────── */
-export async function getLookbooks(): Promise<Lookbook[]> {
+export async function getLookbooks(locale?: Locale): Promise<Lookbook[]> {
   "use cache";
   cacheTag("catalog");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "lookbooks", where: published, limit: 100, depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "lookbooks", where: published, limit: 100, depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((l) => ({
     slug: l.slug ?? String(l.id),
     title: l.title,
@@ -185,17 +194,18 @@ export async function getLookbooks(): Promise<Lookbook[]> {
   }));
 }
 
-export async function getLookbook(slug: string) {
-  return (await getLookbooks()).find((l) => l.slug === slug) ?? null;
+export async function getLookbook(slug: string, locale?: Locale) {
+  return (await getLookbooks(locale)).find((l) => l.slug === slug) ?? null;
 }
 
 /* ───────── Tạp chí ───────── */
-export async function getArticles(): Promise<Article[]> {
+export async function getArticles(locale?: Locale): Promise<Article[]> {
   "use cache";
   cacheTag("articles");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "articles", where: published, sort: "-publishedAt", limit: 200, depth: 2, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "articles", where: published, sort: "-publishedAt", limit: 200, depth: 2, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((a) => ({
     slug: a.slug ?? String(a.id),
     title: a.title,
@@ -209,17 +219,18 @@ export async function getArticles(): Promise<Article[]> {
   }));
 }
 
-export async function getArticle(slug: string) {
-  return (await getArticles()).find((a) => a.slug === slug) ?? null;
+export async function getArticle(slug: string, locale?: Locale) {
+  return (await getArticles(locale)).find((a) => a.slug === slug) ?? null;
 }
 
 /* ───────── Ưu đãi, chính sách, cửa hàng ───────── */
-export async function getPromotions(): Promise<Promotion[]> {
+export async function getPromotions(locale?: Locale): Promise<Promotion[]> {
   "use cache";
   cacheTag("promotions");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "promotions", where: published, sort: "startDate", limit: 50, depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "promotions", where: published, sort: "startDate", limit: 50, depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((p) => ({
     slug: p.slug ?? String(p.id),
     title: p.title,
@@ -230,12 +241,13 @@ export async function getPromotions(): Promise<Promotion[]> {
   }));
 }
 
-export async function getPolicies(): Promise<Policy[]> {
+export async function getPolicies(locale?: Locale): Promise<Policy[]> {
   "use cache";
   cacheTag("policies");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "policies", where: published, sort: "order", limit: 50, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "policies", where: published, sort: "order", limit: 50, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((p) => ({
     slug: p.slug ?? String(p.id),
     title: p.title,
@@ -246,12 +258,13 @@ export async function getPolicies(): Promise<Policy[]> {
   }));
 }
 
-export async function getStores(): Promise<Store[]> {
+export async function getStores(locale?: Locale): Promise<Store[]> {
   "use cache";
   cacheTag("stores");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const res = await payload.find({ collection: "stores", sort: "order", limit: 100, depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const res = await payload.find({ collection: "stores", sort: "order", limit: 100, depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return res.docs.map((s) => ({
     name: s.name,
     region: s.region,
@@ -264,13 +277,14 @@ export async function getStores(): Promise<Store[]> {
 }
 
 /* ───────── Trang (globals) ───────── */
-export async function getHome() {
+export async function getHome(locale?: Locale) {
   "use cache";
   cacheTag("home");
   cacheTag("catalog");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const h = await payload.findGlobal({ slug: "home", depth: 2, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const h = await payload.findGlobal({ slug: "home", depth: 2, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return {
     hero: { ...h.hero, image: imageUrl(h.hero?.image, "hero") },
     lineSections: (h.lineSections ?? []).map((s) => ({
@@ -287,12 +301,13 @@ export async function getHome() {
   };
 }
 
-export async function getAbout() {
+export async function getAbout(locale?: Locale) {
   "use cache";
   cacheTag("about");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const a = await payload.findGlobal({ slug: "about", depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const a = await payload.findGlobal({ slug: "about", depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return {
     ...a,
     heroImage: imageUrl(a.heroImage, "hero"),
@@ -303,12 +318,13 @@ export async function getAbout() {
   };
 }
 
-export async function getWorkshop() {
+export async function getWorkshop(locale?: Locale) {
   "use cache";
   cacheTag("workshop");
   cacheLife("max");
   const payload = await getPayloadClient();
-  const w = await payload.findGlobal({ slug: "workshop", depth: 1, overrideAccess: false });
+  const loc = locale ?? (await getLocale());
+  const w = await payload.findGlobal({ slug: "workshop", depth: 1, overrideAccess: false, locale: loc, fallbackLocale: defaultLocale });
   return {
     ...w,
     heroImage: imageUrl(w.heroImage, "hero"),

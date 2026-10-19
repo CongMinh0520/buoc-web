@@ -2,6 +2,8 @@
 
 import crypto from "node:crypto";
 import { z } from "zod";
+import { fail, requestLocale } from "@/server/i18n";
+import { localePath } from "@/i18n/config";
 import { getPayloadClient, getSiteSettings } from "@/lib/cms";
 import { getCurrentCustomer } from "@/server/auth";
 import { clientIp, rateLimit, TOO_MANY } from "@/server/rate-limit";
@@ -72,7 +74,7 @@ async function priceCart(items: z.infer<typeof cartSchema>) {
 
 export async function quoteCartAction(items: unknown): Promise<ActionResult<{ lines: QuoteLine[]; subtotal: number; shippingFee: number; total: number; methods: { vnpay: boolean; momo: boolean } }>> {
   const parsed = cartSchema.safeParse(items);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Giỏ hàng không hợp lệ" };
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Giỏ hàng không hợp lệ");
   const { lines, subtotal } = await priceCart(parsed.data);
   return {
     ok: true,
@@ -155,23 +157,23 @@ async function startOnlinePayment(code: string, total: number, method: "vnpay" |
   try {
     const r = await createMomoPayment({ code, amount: total, orderInfo, redirectUrl: absUrl("/api/payments/momo/return"), ipnUrl: absUrl("/api/payments/momo/ipn") });
     if (r.resultCode === 0 && r.payUrl) return { ok: true, data: { redirect: r.payUrl } };
-    return { ok: false, error: `MoMo từ chối giao dịch: ${r.message}` };
+    return fail(`MoMo từ chối giao dịch: ${r.message}`);
   } catch {
-    return { ok: false, error: "Không kết nối được MoMo. Vui lòng thử lại hoặc chọn phương thức khác." };
+    return fail("Không kết nối được MoMo. Vui lòng thử lại hoặc chọn phương thức khác.");
   }
 }
 
 export async function placeOrderAction(input: unknown): Promise<ActionResult<{ redirect: string; code: string }>> {
-  if (!(await rateLimit("checkout", 10, 600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("checkout", 10, 600))) return fail(TOO_MANY);
   const parsed = orderSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Thông tin chưa hợp lệ" };
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Thông tin chưa hợp lệ");
   const data = parsed.data;
-  if (data.paymentMethod === "vnpay" && !vnpayEnabled()) return { ok: false, error: "VNPay chưa được cấu hình." };
-  if (data.paymentMethod === "momo" && !momoEnabled()) return { ok: false, error: "MoMo chưa được cấu hình." };
+  if (data.paymentMethod === "vnpay" && !vnpayEnabled()) return fail("VNPay chưa được cấu hình.");
+  if (data.paymentMethod === "momo" && !momoEnabled()) return fail("MoMo chưa được cấu hình.");
 
   const { payload, lines, subtotal, products } = await priceCart(data.items);
   const problem = lines.find((l) => l.problem);
-  if (problem) return { ok: false, error: `${problem.name} (${problem.color}, size ${problem.size}): ${problem.problem}. Vui lòng cập nhật giỏ hàng.` };
+  if (problem) return fail(`${problem.name} (${problem.color}, size ${problem.size}): ${problem.problem}. Vui lòng cập nhật giỏ hàng.`);
 
   // Trừ tồn kho theo từng sản phẩm
   for (const [slug, product] of products) {
@@ -185,7 +187,8 @@ export async function placeOrderAction(input: unknown): Promise<ActionResult<{ r
 
   const customer = await getCurrentCustomer();
   const total = subtotal + SHIPPING_FEE;
-  const { orderPrefix } = await getSiteSettings();
+  const { orderPrefix } = await getSiteSettings("vi");
+  const lang = await requestLocale();
   let code = newCode(orderPrefix);
   for (let i = 0; i < 5 && (await findOrderByCode(payload, code)); i++) code = newCode(orderPrefix);
 
@@ -195,6 +198,7 @@ export async function placeOrderAction(input: unknown): Promise<ActionResult<{ r
     data: {
       code,
       customer: customer?.id,
+      locale: lang,
       email: data.email,
       status: data.paymentMethod === "cod" ? "confirmed" : "pending",
       paymentMethod: data.paymentMethod,
@@ -215,8 +219,11 @@ export async function placeOrderAction(input: unknown): Promise<ActionResult<{ r
     .sendEmail({
       from: mail.from,
       to: data.email,
-      subject: `${mail.brandName} đã nhận đơn hàng #${code}`,
-      text: `Cảm ơn bạn đã đặt hàng. Mã đơn: ${code}. Tổng cộng: ${total.toLocaleString("vi-VN")} ₫. Xem đơn: ${absUrl(orderResultPath(code))}`,
+      subject: lang === "en" ? `${mail.brandName} has received your order #${code}` : `${mail.brandName} đã nhận đơn hàng #${code}`,
+      text:
+        lang === "en"
+          ? `Thank you for your order. Order number: ${code}. Total: ${total.toLocaleString("vi-VN")} ₫. View your order: ${absUrl(localePath(lang, orderResultPath(code)))}`
+          : `Cảm ơn bạn đã đặt hàng. Mã đơn: ${code}. Tổng cộng: ${total.toLocaleString("vi-VN")} ₫. Xem đơn: ${absUrl(orderResultPath(code))}`,
     })
     .catch(() => {});
 
@@ -228,13 +235,13 @@ export async function placeOrderAction(input: unknown): Promise<ActionResult<{ r
 
 /** Thử thanh toán lại cho đơn còn chờ (từ trang thất bại) */
 export async function retryPaymentAction(input: { code: string; token: string; method: "vnpay" | "momo" }): Promise<ActionResult<{ redirect: string }>> {
-  if (!(await rateLimit("retry-pay", 10, 600))) return { ok: false, error: TOO_MANY };
+  if (!(await rateLimit("retry-pay", 10, 600))) return fail(TOO_MANY);
   const parsed = z.object({ code: z.string().regex(ORDER_CODE), token: z.string().max(64), method: z.enum(["vnpay", "momo"]) }).safeParse(input);
-  if (!parsed.success || !checkOrderToken(parsed.data.code, parsed.data.token)) return { ok: false, error: "Liên kết không hợp lệ." };
+  if (!parsed.success || !checkOrderToken(parsed.data.code, parsed.data.token)) return fail("Liên kết không hợp lệ.");
   const payload = await getPayloadClient();
   const order = await findOrderByCode(payload, parsed.data.code);
-  if (!order || order.paymentStatus === "paid" || order.status !== "pending") return { ok: false, error: "Đơn hàng không còn chờ thanh toán." };
-  if (Date.now() - new Date(order.createdAt).getTime() > 24 * 3600 * 1000) return { ok: false, error: "Đơn hàng đã quá hạn thanh toán. Vui lòng đặt lại." };
+  if (!order || order.paymentStatus === "paid" || order.status !== "pending") return fail("Đơn hàng không còn chờ thanh toán.");
+  if (Date.now() - new Date(order.createdAt).getTime() > 24 * 3600 * 1000) return fail("Đơn hàng đã quá hạn thanh toán. Vui lòng đặt lại.");
   if (parsed.data.method !== order.paymentMethod) {
     await payload.update({ collection: "orders", id: order.id, overrideAccess: true, data: { paymentMethod: parsed.data.method } });
   }
@@ -244,24 +251,24 @@ export async function retryPaymentAction(input: { code: string; token: string; m
 /** Đổi đơn chờ thanh toán sang COD */
 export async function switchToCodAction(input: { code: string; token: string }): Promise<ActionResult<{ redirect: string }>> {
   const parsed = z.object({ code: z.string().regex(ORDER_CODE), token: z.string().max(64) }).safeParse(input);
-  if (!parsed.success || !checkOrderToken(parsed.data.code, parsed.data.token)) return { ok: false, error: "Liên kết không hợp lệ." };
+  if (!parsed.success || !checkOrderToken(parsed.data.code, parsed.data.token)) return fail("Liên kết không hợp lệ.");
   const payload = await getPayloadClient();
   const order = await findOrderByCode(payload, parsed.data.code);
-  if (!order || order.paymentStatus === "paid" || order.status !== "pending") return { ok: false, error: "Đơn hàng không còn chờ thanh toán." };
+  if (!order || order.paymentStatus === "paid" || order.status !== "pending") return fail("Đơn hàng không còn chờ thanh toán.");
   await payload.update({ collection: "orders", id: order.id, overrideAccess: true, data: { paymentMethod: "cod", status: "confirmed", paymentStatus: "unpaid" } });
   return { ok: true, data: { redirect: orderResultPath(order.code) } };
 }
 
 /** Tra cứu đơn hàng công khai: cần cả mã đơn và số điện thoại người nhận */
 export async function lookupOrderAction(input: { code: string; phone: string }) {
-  if (!(await rateLimit("lookup", 15, 600))) return { ok: false as const, error: TOO_MANY };
+  if (!(await rateLimit("lookup", 15, 600))) return fail(TOO_MANY);
   const parsed = z.object({ code: z.string().trim().toUpperCase().transform((v) => v.replace(/^#/, "")).pipe(z.string().regex(ORDER_CODE)), phone }).safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: "Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn và số điện thoại." };
+  if (!parsed.success) return fail("Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn và số điện thoại.");
   const payload = await getPayloadClient();
   const order = await findOrderByCode(payload, parsed.data.code);
   const norm = (p: string) => p.replace(/\D/g, "").replace(/^84/, "0");
   if (!order || norm(order.shipping.phone) !== norm(parsed.data.phone)) {
-    return { ok: false as const, error: "Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn và số điện thoại." };
+    return fail("Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn và số điện thoại.");
   }
   return {
     ok: true as const,

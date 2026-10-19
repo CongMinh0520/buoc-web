@@ -1,10 +1,12 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { getT } from "@/i18n/server";
 import { Img } from "@/components/ui/Img";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { MediaCarousel } from "./MediaCarousel";
 import type { Line, Product } from "@/lib/types";
 
-export function LineView({ line: l, lines, products }: { line: Line; lines: Line[]; products: Product[] }) {
+export async function LineView({ line: l, lines, products }: { line: Line; lines: Line[]; products: Product[] }) {
+  const t = await getT();
   return (
     <>
       <section className="relative h-[100svh] max-h-[760px] min-h-[560px] overflow-hidden bg-ink-2">
@@ -30,22 +32,22 @@ export function LineView({ line: l, lines, products }: { line: Line; lines: Line
 
       <section className="mx-auto max-w-site px-4 pt-20 sm:px-10">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="font-display text-[36px] leading-none font-medium uppercase">Sản phẩm {l.label}</h2>
+          <h2 className="font-display text-[36px] leading-none font-medium uppercase">{t.line.products(l.label)}</h2>
           <Link href="/danh-muc/tat-ca" className="label-caps shrink-0 underline underline-offset-4">
-            Xem tất cả
+            {t.common.viewAll}
           </Link>
         </div>
         <ul className="mt-8 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4">
           {products.slice(0, 8).map((p) => (
             <li key={p.slug}>
-              <ProductCard product={p} />
+              <ProductCard product={p} newLabel={t.common.newBadge} />
             </li>
           ))}
         </ul>
       </section>
 
       {/* Chuyển dòng sản phẩm */}
-      <nav aria-label="Các dòng sản phẩm" className="mt-20 border-t border-black/10 py-12">
+      <nav aria-label={t.line.otherLines} className="mt-20 border-t border-black/10 py-12">
         <div className="mx-auto grid max-w-site grid-cols-2 gap-4 px-4 sm:px-10 lg:grid-cols-4">
           {lines.map((k) => {
             const on = k.key === l.key;
@@ -60,7 +62,7 @@ export function LineView({ line: l, lines, products }: { line: Line; lines: Line
               >
                 <span className="font-display text-[26px] leading-none font-medium tracking-[0.1em]">{k.label}</span>
                 <span className={`eyebrow mt-3 ${on ? "text-white/70" : "text-black/50"}`}>{k.overline}</span>
-                <span className={`mt-4 text-[11px] tracking-[0.1em] uppercase ${on ? "" : "underline underline-offset-4"}`}>{on ? "Đang xem" : "Xem"}</span>
+                <span className={`mt-4 text-[11px] tracking-[0.1em] uppercase ${on ? "" : "underline underline-offset-4"}`}>{on ? t.line.viewing : t.line.view}</span>
               </Link>
             );
           })}

@@ -1,10 +1,12 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { getT } from "@/i18n/server";
 import { Img } from "@/components/ui/Img";
 import { RichContent } from "@/components/rich/RichContent";
 import type { Article } from "@/lib/types";
 import { ArticleCard } from "./ArticleCard";
 
-export function ArticleView({ article, related }: { article: Article; related: Article[] }) {
+export async function ArticleView({ article, related }: { article: Article; related: Article[] }) {
+  const t = await getT();
   return (
     <>
       <section className="relative h-[480px] overflow-hidden bg-ink-2 lg:h-[540px]">
@@ -13,9 +15,9 @@ export function ArticleView({ article, related }: { article: Article; related: A
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-[794px] px-4 pb-12 text-white sm:px-10">
           <p className="eyebrow">
             <Link href="/tap-chi" className="hover:underline">
-              Tạp chí
+              {t.journal.title}
             </Link>{" "}
-            · {article.category} · <time dateTime={article.dateISO}>{article.date}</time>
+            · {t.journal.categories[article.category] ?? article.category} · <time dateTime={article.dateISO}>{article.date}</time>
           </p>
           <h1 className="mt-3 font-display text-[38px] leading-[1.05] font-medium text-balance sm:text-[54px]">{article.title}</h1>
         </div>
@@ -25,10 +27,10 @@ export function ArticleView({ article, related }: { article: Article; related: A
         <RichContent data={article.content} />
         <div className="mt-12 flex flex-wrap gap-3 border-t border-black/15 pt-8">
           <Link href="/danh-muc/tat-ca" className="btn-dark">
-            Khám phá bộ sưu tập
+            {t.journal.explore}
           </Link>
           <Link href="/xuong-mo#dat-lich" className="btn-outline">
-            Đặt lịch xưởng mở
+            {t.journal.bookWorkshop}
           </Link>
         </div>
       </article>
@@ -36,7 +38,7 @@ export function ArticleView({ article, related }: { article: Article; related: A
       {related.length > 0 && (
         <section className="bg-paper py-16">
           <div className="mx-auto max-w-site px-4 sm:px-10">
-            <h2 className="font-display text-[32px] font-medium">Bài viết khác</h2>
+            <h2 className="font-display text-[32px] font-medium">{t.journal.more}</h2>
             <ul className="mt-8 grid gap-4 sm:grid-cols-3">
               {related.map((a) => (
                 <li key={a.slug}>

@@ -5,12 +5,17 @@ import { OrderList, type AccountOrder, type OrderStatus } from "@/components/acc
 import { getCurrentCustomer } from "@/server/auth";
 import { getPayloadClient } from "@/lib/cms";
 import { pageMeta } from "@/lib/seo";
+import { getLocale, getT } from "@/i18n/server";
 
-export const metadata = pageMeta({ title: "Lịch sử đơn hàng", path: "/tai-khoan/lich-su-don-hang", noindex: true });
+export async function generateMetadata() {
+  const [locale, t] = await Promise.all([getLocale(), getT()]);
+  return pageMeta({ locale, title: t.account.titles.orders, path: "/tai-khoan/lich-su-don-hang", noindex: true });
+}
 
 async function Content() {
   const c = await getCurrentCustomer();
   if (!c) return <LoginPrompt />;
+  const t = await getT();
   const payload = await getPayloadClient();
   // overrideAccess: false + user → Payload chỉ trả về đơn của chính khách này
   const res = await payload.find({ collection: "orders", user: c, overrideAccess: false, sort: "-createdAt", limit: 50, depth: 0 });
@@ -20,14 +25,15 @@ async function Content() {
     status: o.status as OrderStatus,
     payment: o.paymentMethod,
     address: { name: `${o.shipping.name.toUpperCase()} — ${o.shipping.phone}`, line: `${o.shipping.line}, ${o.shipping.ward}, ${o.shipping.province}` },
-    items: o.items.map((i) => ({ name: i.name, price: i.price, qty: i.qty, image: i.image ?? "", note: `Màu ${i.color} · Size ${i.size}` })),
+    items: o.items.map((i) => ({ name: i.name, price: i.price, qty: i.qty, image: i.image ?? "", note: t.account.orders.note(i.color, i.size) })),
   }));
   return <OrderList orders={orders} />;
 }
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const t = await getT();
   return (
-    <AccountShell title="Lịch sử đơn hàng" active="orders">
+    <AccountShell title={t.account.titles.orders} active="orders">
       <Suspense fallback={<AccountSkeleton />}>
         <Content />
       </Suspense>

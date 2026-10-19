@@ -4,19 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import type { LineRef, Product } from "@/lib/types";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { useT } from "@/components/providers/LocaleProvider";
 
 type Sort = "featured" | "new" | "price-asc" | "price-desc";
-const sortLabels: Record<Sort, string> = {
-  featured: "Nổi bật",
-  new: "Mới nhất",
-  "price-asc": "Giá tăng dần",
-  "price-desc": "Giá giảm dần",
-};
+const SORTS: Sort[] = ["featured", "new", "price-asc", "price-desc"];
 
 export function CategoryView({ products }: { products: Product[] }) {
   const [line, setLine] = useState<string>("all");
   const [sort, setSort] = useState<Sort>("featured");
   const [panel, setPanel] = useState(false);
+  const t = useT();
+  const sortLabels = t.category.sort;
 
   const availableLines = useMemo(
     () => {
@@ -54,7 +52,7 @@ export function CategoryView({ products }: { products: Product[] }) {
       <div className="sticky top-14 z-30 mt-10 bg-white/95 px-4 pt-3 pb-4 backdrop-blur-md sm:px-5">
         <div className="flex justify-center">
           <button className={chip(line === "all")} onClick={() => setLine("all")}>
-            Xem tất cả
+            {t.category.viewAll}
           </button>
         </div>
         <div className="no-scrollbar mt-3 flex justify-start gap-2.5 overflow-x-auto sm:justify-center">
@@ -68,12 +66,12 @@ export function CategoryView({ products }: { products: Product[] }) {
 
       <div className="mx-auto max-w-site px-4 sm:px-5">
         <p className="eyebrow mb-6 text-black/45">
-          {list.length} sản phẩm · {sortLabels[sort]}
+          {t.common.products(list.length)} · {sortLabels[sort]}
         </p>
         <ul className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4 lg:gap-y-10">
           {list.map((p) => (
             <li key={p.slug}>
-              <ProductCard product={p} />
+              <ProductCard product={p} newLabel={t.common.newBadge} />
             </li>
           ))}
         </ul>
@@ -88,33 +86,33 @@ export function CategoryView({ products }: { products: Product[] }) {
           <span className="grid size-12 place-items-center">
             <SlidersHorizontal size={16} strokeWidth={1.5} />
           </span>
-          Bộ lọc &amp; Sắp xếp
+          {t.category.filterSort}
         </button>
       </div>
 
       {panel && (
         <div className="fixed inset-0 z-[80] bg-black/40" onMouseDown={(e) => e.target === e.currentTarget && setPanel(false)}>
-          <aside className="absolute inset-y-0 right-0 flex w-full max-w-[400px] flex-col bg-white" aria-label="Bộ lọc và sắp xếp">
+          <aside className="absolute inset-y-0 right-0 flex w-full max-w-[400px] flex-col bg-white" aria-label={t.category.filterSort}>
             <div className="flex items-center justify-between border-b border-black px-6 py-5">
-              <p className="label-caps font-medium">Bộ lọc &amp; Sắp xếp</p>
-              <button onClick={() => setPanel(false)} aria-label="Đóng">
+              <p className="label-caps font-medium">{t.category.filterSort}</p>
+              <button onClick={() => setPanel(false)} aria-label={t.common.close}>
                 <X size={20} strokeWidth={1.4} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-6 py-6">
-              <p className="label-caps text-black/45">Sắp xếp theo</p>
+              <p className="label-caps text-black/45">{t.category.sortBy}</p>
               <div className="mt-3 grid gap-1">
-                {(Object.keys(sortLabels) as Sort[]).map((s) => (
+                {SORTS.map((s) => (
                   <label key={s} className="flex cursor-pointer items-center gap-3 py-2 text-[13px]">
                     <input type="radio" name="sort" checked={sort === s} onChange={() => setSort(s)} className="accent-black" />
                     {sortLabels[s]}
                   </label>
                 ))}
               </div>
-              <p className="label-caps mt-8 text-black/45">Dòng sản phẩm</p>
+              <p className="label-caps mt-8 text-black/45">{t.category.lines}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button className={chip(line === "all")} onClick={() => setLine("all")}>
-                  Tất cả
+                  {t.common.all}
                 </button>
                 {availableLines.map((l) => (
                   <button key={l.key} className={chip(line === l.key)} onClick={() => setLine(l.key)}>
@@ -131,10 +129,10 @@ export function CategoryView({ products }: { products: Product[] }) {
                   setSort("featured");
                 }}
               >
-                Đặt lại
+                {t.category.reset}
               </button>
               <button className="btn-dark flex-1 px-4" onClick={() => setPanel(false)}>
-                Xem {list.length} sản phẩm
+                {t.category.show(list.length)}
               </button>
             </div>
           </aside>

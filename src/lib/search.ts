@@ -1,4 +1,6 @@
 import type { Product } from "./types";
+// Đường dẫn tương đối kèm đuôi .ts để unit test (node --test) import được, không qua alias "@/"
+import { localePath, type Locale } from "../i18n/config.ts";
 
 /** Bỏ dấu tiếng Việt để tìm "giay" cũng ra "giày" */
 export const normalize = (s: string) =>
@@ -13,19 +15,23 @@ export function searchProducts(products: Product[], q: string) {
   if (!n) return [];
   const words = n.split(/\s+/);
   return products.filter((p) => {
-    const hay = normalize(`${p.name} ${p.subtitle} ${p.line.label} ${p.colors.map((c) => c.name).join(" ")}`);
+    const hay = normalize(`${p.name} ${p.subtitle} ${p.line.label} ${p.colors.map((c) => c.label).join(" ")}`);
     return words.every((w) => hay.includes(w));
   });
 }
 
-let cache: Promise<Product[]> | null = null;
-/** Tải chỉ mục tìm kiếm một lần mỗi phiên trình duyệt */
-export function loadSearchIndex() {
-  cache ??= fetch("/search-index.json")
-    .then((r) => (r.ok ? (r.json() as Promise<Product[]>) : []))
-    .catch(() => {
-      cache = null;
-      return [];
-    });
-  return cache;
+const cache = new Map<Locale, Promise<Product[]>>();
+/** Tải chỉ mục tìm kiếm (theo ngôn ngữ) một lần mỗi phiên trình duyệt */
+export function loadSearchIndex(locale: Locale) {
+  let p = cache.get(locale);
+  if (!p) {
+    p = fetch(localePath(locale, "/search-index.json"))
+      .then((r) => (r.ok ? (r.json() as Promise<Product[]>) : []))
+      .catch(() => {
+        cache.delete(locale);
+        return [];
+      });
+    cache.set(locale, p);
+  }
+  return p;
 }

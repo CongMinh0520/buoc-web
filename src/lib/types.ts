@@ -23,7 +23,8 @@ export type Product = {
   gender: Gender;
   price: number;
   isNew: boolean;
-  colors: { name: string; hex: string }[];
+  /** name: mã nội bộ (khớp tồn kho, giỏ hàng); label: tên hiển thị theo ngôn ngữ */
+  colors: { name: string; hex: string; label: string }[];
   sizes: string[];
   /** Tồn kho theo "màu|size" */
   stock: Record<string, number>;

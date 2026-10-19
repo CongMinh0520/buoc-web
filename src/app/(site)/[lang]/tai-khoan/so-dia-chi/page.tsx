@@ -4,8 +4,12 @@ import { AddressBook } from "@/components/account/AddressBook";
 import { AccountSkeleton, LoginPrompt } from "@/components/account/LoginPrompt";
 import { getCurrentCustomer } from "@/server/auth";
 import { pageMeta } from "@/lib/seo";
+import { getLocale, getT } from "@/i18n/server";
 
-export const metadata = pageMeta({ title: "Sổ địa chỉ", path: "/tai-khoan/so-dia-chi", noindex: true });
+export async function generateMetadata() {
+  const [locale, t] = await Promise.all([getLocale(), getT()]);
+  return pageMeta({ locale, title: t.account.titles.address, path: "/tai-khoan/so-dia-chi", noindex: true });
+}
 
 async function Content() {
   const c = await getCurrentCustomer();
@@ -22,9 +26,10 @@ async function Content() {
   return <AddressBook addresses={addresses} />;
 }
 
-export default function AddressPage() {
+export default async function AddressPage() {
+  const t = await getT();
   return (
-    <AccountShell title="Sổ địa chỉ" active="address">
+    <AccountShell title={t.account.titles.address} active="address">
       <Suspense fallback={<AccountSkeleton />}>
         <Content />
       </Suspense>

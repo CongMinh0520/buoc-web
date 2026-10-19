@@ -1,11 +1,12 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { getT } from "@/i18n/server";
 import { Logo } from "@/components/ui/Logo";
 import { getLines, getLookbooks, getPolicies, getSiteSettings, getStores } from "@/lib/cms";
 
 export async function Footer() {
-  const [s, stores, lookbooks, lines, policies] = await Promise.all([getSiteSettings(), getStores(), getLookbooks(), getLines(), getPolicies()]);
+  const [s, stores, lookbooks, lines, policies, t] = await Promise.all([getSiteSettings(), getStores(), getLookbooks(), getLines(), getPolicies(), getT()]);
   const c = s.company;
-  const registration = [c.registrationNo && `Giấy chứng nhận ĐKDN số ${c.registrationNo}`, c.registrationIssued && `cấp ${c.registrationIssued}`].filter(Boolean).join(", ");
+  const registration = [c.registrationNo && t.footer.registration(c.registrationNo), c.registrationIssued && t.footer.issued(c.registrationIssued)].filter(Boolean).join(", ");
 
   const regions = Array.from(new Set(stores.map((x) => x.footerRegion)));
   const groups = lines
@@ -17,13 +18,13 @@ export async function Footer() {
       <div className="mx-auto max-w-site px-4 sm:px-10">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.45fr_1.8fr_1fr_1fr] lg:gap-8">
           <div>
-            <Logo size="lg" wordmark={s.wordmark} name={s.brandName} />
+            <Logo size="lg" wordmark={s.wordmark} name={s.brandName} homeLabel={t.header.homeOf(s.brandName)} />
             <p className="mt-5 max-w-[260px] text-[12px] leading-[18px] tracking-[0.05em] text-ink-2 uppercase">{s.tagline}</p>
             <div className="mt-5 text-[12px] leading-[18px] text-ink-3">
-              {s.hotline && <p>Hotline: {s.hotline}</p>}
+              {s.hotline && <p>{t.footer.hotline}: {s.hotline}</p>}
               {s.email && (
                 <p className="mt-1">
-                  Email:{" "}
+                  {t.footer.email}:{" "}
                   <a href={`mailto:${s.email}`} className="underline">
                     {s.email}
                   </a>
@@ -40,7 +41,7 @@ export async function Footer() {
           </div>
 
           <div>
-            <h2 className="text-[14px] font-medium tracking-[0.08em] text-ink uppercase">Hệ thống cửa hàng</h2>
+            <h2 className="text-[14px] font-medium tracking-[0.08em] text-ink uppercase">{t.footer.stores}</h2>
             <div className="mt-4 space-y-5">
               {regions.map((r) => (
                 <div key={r}>
@@ -60,7 +61,7 @@ export async function Footer() {
           </div>
 
           <div>
-            <h2 className="text-[14px] font-medium tracking-[0.08em] text-ink uppercase">Bộ sưu tập</h2>
+            <h2 className="text-[14px] font-medium tracking-[0.08em] text-ink uppercase">{t.footer.collections}</h2>
             <div className="mt-4 space-y-5">
               {groups.map((g) => (
                 <div key={g.line.key}>
@@ -82,7 +83,7 @@ export async function Footer() {
           </div>
 
           <div>
-            <h2 className="text-[14px] font-medium tracking-[0.08em] text-ink uppercase">Thông tin</h2>
+            <h2 className="text-[14px] font-medium tracking-[0.08em] text-ink uppercase">{t.footer.info}</h2>
             <ul className="mt-4 space-y-2">
               {s.footerInfo.map((i) => (
                 <li key={i.label}>
@@ -96,7 +97,7 @@ export async function Footer() {
         </div>
 
         {policies.length > 0 && (
-          <nav aria-label="Chính sách" className="mt-14 border-t border-line pt-5">
+          <nav aria-label={t.footer.policies} className="mt-14 border-t border-line pt-5">
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
               {policies.map((p) => (
                 <li key={p.slug}>
@@ -113,12 +114,12 @@ export async function Footer() {
         {(c.name || c.address || c.taxCode) && (
           <address className="mt-5 space-y-1 text-[11px] leading-[17px] text-ink-3 not-italic">
             {c.name && <p className="font-medium text-ink-2">{c.name}</p>}
-            {c.address && <p>Trụ sở: {c.address}</p>}
-            {(registration || c.taxCode) && <p>{[registration, c.taxCode && `Mã số thuế: ${c.taxCode}`].filter(Boolean).join(" · ")}</p>}
-            {c.representative && <p>Người đại diện: {c.representative}</p>}
+            {c.address && <p>{t.footer.headOffice}: {c.address}</p>}
+            {(registration || c.taxCode) && <p>{[registration, c.taxCode && `${t.footer.taxCode}: ${c.taxCode}`].filter(Boolean).join(" · ")}</p>}
+            {c.representative && <p>{t.footer.representative}: {c.representative}</p>}
             {(c.complaintPhone || c.complaintEmail) && (
               <p>
-                Tiếp nhận phản ánh, khiếu nại: {c.complaintPhone}
+                {t.footer.complaints}: {c.complaintPhone}
                 {c.complaintPhone && c.complaintEmail && " · "}
                 {c.complaintEmail && (
                   <a href={`mailto:${c.complaintEmail}`} className="underline">

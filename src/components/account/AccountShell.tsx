@@ -1,15 +1,14 @@
-import Link from "next/link";
+"use client";
+
+import Link from "@/components/ui/LocaleLink";
+import { useT } from "@/components/providers/LocaleProvider";
 
 const nav = [
-  { key: "info", label: "Tài khoản", href: "/tai-khoan" },
-  { key: "address", label: "Sổ địa chỉ", href: "/tai-khoan/so-dia-chi" },
-  {
-    key: "orders",
-    label: "Lịch sử đơn hàng",
-    href: "/tai-khoan/lich-su-don-hang",
-  },
-  { key: "points", label: "Tích điểm", href: "/tai-khoan/tich-diem" },
-  { key: "notice", label: "Thông báo", href: "/tai-khoan/thong-bao" },
+  { key: "info", href: "/tai-khoan" },
+  { key: "address", href: "/tai-khoan/so-dia-chi" },
+  { key: "orders", href: "/tai-khoan/lich-su-don-hang" },
+  { key: "points", href: "/tai-khoan/tich-diem" },
+  { key: "notice", href: "/tai-khoan/thong-bao" },
 ] as const;
 
 export type AccountKey = (typeof nav)[number]["key"];
@@ -23,12 +22,13 @@ export function AccountShell({
   active: AccountKey;
   children: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="bg-paper">
       <section className="border-y border-black bg-white py-10 lg:py-12">
         <div className="mx-auto max-w-site px-4 sm:px-5">
           <p className="text-[11px] tracking-[0.14em] text-black uppercase">
-            Tài khoản
+            {t.account.eyebrow}
           </p>
           <h1 className="mt-2 font-display text-[38px] leading-none font-medium tracking-[0.02em] text-black uppercase">
             {title}
@@ -38,7 +38,7 @@ export function AccountShell({
       <div className="mx-auto grid max-w-site px-4 sm:px-5 lg:grid-cols-[240px_1fr]">
         <aside className="border-black lg:border-r">
           <nav
-            aria-label="Tài khoản"
+            aria-label={t.account.eyebrow}
             className="no-scrollbar flex gap-6 overflow-x-auto border-b border-black/15 py-5 lg:flex-col lg:border-b-0 lg:py-10 lg:pr-10"
           >
             {nav.map((n) => {
@@ -54,7 +54,7 @@ export function AccountShell({
                       : "text-black/45 hover:text-black"
                   }`}
                 >
-                  {n.label}
+                  {t.account.nav[n.key]}
                 </Link>
               );
             })}

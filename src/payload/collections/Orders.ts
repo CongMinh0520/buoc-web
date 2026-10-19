@@ -79,6 +79,17 @@ export const Orders: CollectionConfig = {
     { name: "code", label: "Mã đơn", type: "text", required: true, unique: true, index: true, admin: { readOnly: true } },
     { name: "customer", label: "Khách hàng", type: "relationship", relationTo: "customers", index: true },
     {
+      name: "locale",
+      label: "Ngôn ngữ khách dùng khi đặt",
+      type: "select",
+      defaultValue: "vi",
+      options: [
+        { label: "Tiếng Việt", value: "vi" },
+        { label: "English", value: "en" },
+      ],
+      admin: { position: "sidebar", readOnly: true, description: "Email và trang kết quả thanh toán gửi theo ngôn ngữ này." },
+    },
+    {
       type: "row",
       fields: [
         { name: "email", label: "Email", type: "email", required: true },

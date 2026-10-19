@@ -1,4 +1,5 @@
-import Link from "next/link";
+import Link from "@/components/ui/LocaleLink";
+import { getLocale, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { Img } from "@/components/ui/Img";
 import { CollectionCard, LineIntro, TintedSection } from "@/components/home/HomeBlocks";
@@ -6,9 +7,9 @@ import { getArticles, getHome, getLines, getSiteSettings } from "@/lib/cms";
 import { pageMeta } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [home, s] = await Promise.all([getHome(), getSiteSettings()]);
+  const [home, s, locale] = await Promise.all([getHome(), getSiteSettings(), getLocale()]);
   return {
-    ...pageMeta({ title: home.meta?.title || s.seoTitle, description: home.meta?.description || s.seoDescription, path: "/", image: home.hero.image }),
+    ...pageMeta({ locale, title: home.meta?.title || s.seoTitle, description: home.meta?.description || s.seoDescription, path: "/", image: home.hero.image }),
     title: { absolute: home.meta?.title || s.seoTitle },
   };
 }
@@ -47,7 +48,7 @@ function CardGrid({ cards }: { cards: Card[] }) {
 }
 
 export default async function HomePage() {
-  const [home, lines, articles] = await Promise.all([getHome(), getLines(), getArticles()]);
+  const [home, lines, articles, t] = await Promise.all([getHome(), getLines(), getArticles(), getT()]);
   const lineOf = (key: string) => lines.find((l) => l.key === key);
   const [first, second, ...rest] = home.lineSections;
   const closingLine = home.closing.line ? lineOf(home.closing.line.key) : undefined;
@@ -138,7 +139,7 @@ export default async function HomePage() {
       {/* TẠP CHÍ */}
       <section className="bg-paper py-16 lg:py-24">
         <div className="mx-auto max-w-site px-4 sm:px-10">
-          <h2 className="font-display text-[48px] leading-none font-medium tracking-[0.1em] text-ink-2 uppercase">{home.journal.title || "Tạp chí"}</h2>
+          <h2 className="font-display text-[48px] leading-none font-medium tracking-[0.1em] text-ink-2 uppercase">{home.journal.title || t.pages.journalFallback}</h2>
           {home.journal.desc && <p className="mt-3 max-w-[576px] text-[15px] leading-6 text-ink-4">{home.journal.desc}</p>}
           <ul className="no-scrollbar -mx-4 mt-10 flex snap-x snap-mandatory gap-6 overflow-x-auto px-4 sm:mx-0 sm:px-0 md:grid md:grid-cols-3 md:overflow-visible">
             {articles.slice(0, 3).map((n) => (

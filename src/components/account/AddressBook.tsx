@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FieldLabel } from "./AccountShell";
+import { useT } from "@/components/providers/LocaleProvider";
 import {
   deleteAddressAction,
   saveAddressAction,
@@ -45,6 +46,7 @@ function AddressForm({
   pending: boolean;
   error: string | null;
 }) {
+  const t = useT();
   return (
     <form
       className="mt-10 border border-black bg-white p-6 sm:p-8"
@@ -64,66 +66,66 @@ function AddressForm({
       }}
     >
       <h3 className="text-[12px] font-medium tracking-[0.12em] uppercase">
-        {initial ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}
+        {initial ? t.account.address.edit : t.account.address.add}
       </h3>
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         <label>
-          <FieldLabel required>Tên địa chỉ</FieldLabel>
+          <FieldLabel required>{t.account.address.label}</FieldLabel>
           <input
             name="label"
             required
             maxLength={40}
             className="field"
-            placeholder="VD: Nhà riêng, Văn phòng"
+            placeholder={t.account.address.labelPh}
             defaultValue={initial?.label}
           />
         </label>
         <label>
-          <FieldLabel required>Số điện thoại</FieldLabel>
+          <FieldLabel required>{t.account.address.phone}</FieldLabel>
           <input
             name="phone"
             type="tel"
             required
             maxLength={15}
             className="field"
-            placeholder="Nhập số điện thoại"
+            placeholder={t.account.address.phonePh}
             defaultValue={initial?.phone}
             autoComplete="tel"
           />
         </label>
         <label className="md:col-span-2">
-          <FieldLabel required>Họ và tên</FieldLabel>
+          <FieldLabel required>{t.account.address.name}</FieldLabel>
           <input
             name="name"
             required
             maxLength={100}
             className="field"
-            placeholder="Nhập họ và tên người nhận"
+            placeholder={t.account.address.namePh}
             defaultValue={initial?.name}
             autoComplete="name"
           />
         </label>
         <label className="md:col-span-2">
-          <FieldLabel required>Địa chỉ cụ thể</FieldLabel>
+          <FieldLabel required>{t.account.address.line}</FieldLabel>
           <input
             name="line"
             required
             maxLength={200}
             className="field"
-            placeholder="Số nhà, tên đường"
+            placeholder={t.account.address.linePh}
             defaultValue={initial?.line}
             autoComplete="street-address"
           />
         </label>
         <label>
-          <FieldLabel required>Tỉnh / Thành phố</FieldLabel>
+          <FieldLabel required>{t.account.address.province}</FieldLabel>
           <input
             name="province"
             required
             list="ab-provinces"
             maxLength={60}
             className="field"
-            placeholder="Chọn hoặc nhập tỉnh / thành phố"
+            placeholder={t.account.address.provincePh}
             defaultValue={initial?.province}
           />
           <datalist id="ab-provinces">
@@ -133,13 +135,13 @@ function AddressForm({
           </datalist>
         </label>
         <label>
-          <FieldLabel required>Phường / Xã</FieldLabel>
+          <FieldLabel required>{t.account.address.ward}</FieldLabel>
           <input
             name="ward"
             required
             maxLength={60}
             className="field"
-            placeholder="Nhập phường / xã"
+            placeholder={t.account.address.wardPh}
             defaultValue={initial?.ward}
           />
         </label>
@@ -151,7 +153,7 @@ function AddressForm({
             className="size-4 accent-black"
           />
           <span className="text-[12px] tracking-[0.08em] text-black/70 uppercase">
-            Đặt làm địa chỉ mặc định
+            {t.account.address.makeDefault}
           </span>
         </label>
       </div>
@@ -166,14 +168,14 @@ function AddressForm({
           onClick={onCancel}
           className="px-4 text-[12px] tracking-[0.1em] text-black/55 uppercase underline"
         >
-          Hủy
+          {t.common.cancel}
         </button>
         <button
           type="submit"
           disabled={pending}
           className="btn-dark px-6 disabled:opacity-60"
         >
-          Lưu địa chỉ
+          {t.account.address.save}
         </button>
       </div>
     </form>
@@ -186,6 +188,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
   const [editing, setEditing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const t = useT();
 
   const run = (
     fn: () => Promise<{ ok: true } | { ok: false; error: string }>,
@@ -203,14 +206,14 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     <div className="max-w-[960px]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[12px] tracking-[0.08em] text-black/45 uppercase">
-          Quản lý thông tin giao hàng và thông tin nhận hóa đơn
+          {t.account.address.intro}
         </p>
         <button
           onClick={() => setEditing(-1)}
           disabled={addresses.length >= 10}
           className="btn-dark shrink-0 px-5 text-[11px] disabled:opacity-50"
         >
-          Thêm địa chỉ mới
+          {t.account.address.add}
         </button>
       </div>
 
@@ -245,7 +248,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
 
       {addresses.length === 0 ? (
         <p className="mt-10 border border-black/15 bg-white py-16 text-center text-[13px] text-black/50">
-          Bạn chưa lưu địa chỉ nào.
+          {t.account.address.empty}
         </p>
       ) : (
         <div className="mt-10 grid gap-5 md:grid-cols-2" aria-busy={pending}>
@@ -257,7 +260,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
               <div className="flex flex-wrap items-center gap-2">
                 {a.isDefault && (
                   <span className="w-fit bg-black px-2.5 py-1 text-[10px] font-medium tracking-[0.12em] text-white uppercase">
-                    Mặc định
+                    {t.account.address.default}
                   </span>
                 )}
                 <span className="py-1 text-[10px] font-medium tracking-[0.12em] text-black/45 uppercase">
@@ -279,17 +282,17 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                   disabled={pending}
                   onClick={() => setEditing(idx)}
                 >
-                  Chỉnh sửa
+                  {t.common.edit}
                 </button>
                 <button
                   className="hover:text-black"
                   disabled={pending}
                   onClick={() => {
-                    if (confirm("Xóa địa chỉ này?"))
+                    if (confirm(t.account.address.confirmRemove))
                       run(() => deleteAddressAction(idx));
                   }}
                 >
-                  Xóa địa chỉ
+                  {t.account.address.remove}
                 </button>
                 {!a.isDefault && (
                   <button
@@ -297,7 +300,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                     disabled={pending}
                     onClick={() => run(() => setDefaultAddressAction(idx))}
                   >
-                    Đặt làm mặc định
+                    {t.account.address.setDefault}
                   </button>
                 )}
               </div>

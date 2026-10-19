@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { Payload } from "payload";
 import { brandMail } from "./mail";
+import { requestLocale } from "./i18n";
 
 const escapeHtml = (v: string) => v.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]!);
 
@@ -29,15 +30,25 @@ export async function issueOtp(payload: Payload, customerId: number, email: stri
     data: { otpHash: hash(`${customerId}:${purpose}:${code}`), otpExpires: new Date(Date.now() + OTP_TTL_MS).toISOString(), otpAttempts: 0, otpPurpose: purpose },
   });
   const { brandName, from } = await brandMail();
-  const subject = purpose === "verify" ? `Mã xác minh tài khoản ${brandName}` : `Mã đặt lại mật khẩu ${brandName}`;
-  const warn = `Mã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên ${escapeHtml(brandName)}.`;
+  const en = (await requestLocale()) === "en";
+  const subject = en
+    ? purpose === "verify"
+      ? `Your ${brandName} verification code`
+      : `Your ${brandName} password reset code`
+    : purpose === "verify"
+      ? `Mã xác minh tài khoản ${brandName}`
+      : `Mã đặt lại mật khẩu ${brandName}`;
+  const warn = en
+    ? `The code is valid for 10 minutes. Never share it with anyone, including ${escapeHtml(brandName)} staff.`
+    : `Mã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên ${escapeHtml(brandName)}.`;
+  const intro = en ? "Your verification code is" : "Mã OTP của bạn là";
   try {
     await payload.sendEmail({
       from,
       to: email,
       subject,
-      text: `Mã OTP của bạn là ${code}. ${warn}`,
-      html: `<p>Mã OTP của bạn là</p><p style="font-size:28px;letter-spacing:6px;font-weight:600">${code}</p><p>${warn}</p>`,
+      text: `${intro} ${code}. ${warn}`,
+      html: `<p>${intro}</p><p style="font-size:28px;letter-spacing:6px;font-weight:600">${code}</p><p>${warn}</p>`,
     });
   } catch (err) {
     // Máy chủ email lỗi: không làm sập luồng đăng ký; cho phép gửi lại ngay (bỏ thời gian chờ)
